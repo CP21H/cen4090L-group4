@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Project Deck.sln"
+    "dotnet.defaultSolution": "cen4090L-group4.sln"
 }
