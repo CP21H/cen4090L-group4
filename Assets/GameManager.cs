@@ -21,4 +21,9 @@ public class GameManager : MonoBehaviour
     public void changeScene() {
         SceneManager.LoadScene(sceneName);
     }
+
+    public void exitGame() {
+        Application.Quit();
+        Debug.Log("Exiting game...");
+    }
 }
