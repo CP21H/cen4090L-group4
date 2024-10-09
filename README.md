@@ -21,4 +21,4 @@
 - **Cristhian Prado** — [_CP21H_](https://github.com/CP21H)
 - **Caleb Rachel** — [_CalebRachel_](https://github.com/CalebRachel)
 - **Lucas Compton** — [_ok20012_](https://github.com/ok20012)
-- **Mason Day** — TBD
+- **Mason Day** — [_Mason-Day-Cs_](https://github.com/Mason-Day-Cs)
