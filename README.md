@@ -1,10 +1,14 @@
 # Practice Deck
 
 ### Project Description
-[TO BE FILLED OUT]
+“Project Deck”, is a mainly single player focused Poker recreation that allows a user to play against Bots. The Menu User Interface allows the user to go through a tutorial and read up on how the game is played and everything they will need to do to succeed in Practice Deck. Given that, the game is tailored for beginners to Poker allowing them a good environment to learn the game and have fun!
 
-### Libraries / APIs
-[TO BE FILLED OUT]
+### Technologies Used
+- **Platform:** Desktop / Laptop
+- **Engine:** Unity Engine
+- **VCS:** Git
+- **IDE:** Virtual Studio Code
+
 
 ### Setup
 [TO BE FILLED OUT]
@@ -13,7 +17,7 @@
 [TO BE FILLED OUT]
 
 #### Videos
-- [Increment 1]()
+- [Increment 1](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%201)
 - [Increment 2]()
 - [Increment 3]()
 
