@@ -236,8 +236,11 @@ public class DeckManager : MonoBehaviour
     }
     }
 
+
+    public AudioClip soundFX;
     void RevealFlop()
     {
+        AudioSource.PlayClipAtPoint(soundFX, Camera.main.transform.position);
         communityCards[0].sprite = GetCardSprite(deck[0]);
         communityCards[1].sprite = GetCardSprite(deck[1]);
         communityCards[2].sprite = GetCardSprite(deck[2]);
