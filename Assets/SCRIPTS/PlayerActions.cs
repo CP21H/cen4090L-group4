@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; 
+using TMPro;
+using System.Collections.Generic;
 
 public class PlayerActions : MonoBehaviour
 {
@@ -10,6 +11,9 @@ public class PlayerActions : MonoBehaviour
     public TMP_InputField raiseInputField; 
 
     private DeckManager deckManager;  // Reference to DeckManager for game flow control
+
+    public List<Card> playerHand = new();
+
 
     void Start()
     {
@@ -26,6 +30,7 @@ public class PlayerActions : MonoBehaviour
     {
         Debug.Log("Player folds");
         // Handle folding logic, perhaps notify DeckManager to skip player's turn
+        
         deckManager.PlayerFolded();
         deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);  
     }
@@ -34,6 +39,10 @@ public class PlayerActions : MonoBehaviour
     {
         Debug.Log("Player calls");
         // Logic for player calling, matching the current bet
+        //playerBet = minimumBet
+        //playerChips -= minimumBet
+        //pot += minimumBet
+        //advance turn to next bot
         deckManager.PlayerCalled();
         deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);  
     
