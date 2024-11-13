@@ -21,6 +21,14 @@ public class DeckManager : MonoBehaviour
     public TextMeshProUGUI[] botChipsTexts;
     public TextMeshProUGUI turnIndicatorText; 
 
+    //Class for players (and bots)
+    public class Player 
+    {
+        public List<Card> hand= new List<Card>();
+        public bool active = true;
+        public int chips = 1000;
+        public int bet = 0;
+    }
 
     // Card class representing individual cards
     public class Card
@@ -37,6 +45,7 @@ public class DeckManager : MonoBehaviour
 
     // List to hold the deck of cards
     public List<Card> deck = new List<Card>();
+    public List<Card> discardDeck = new List<Card>();
 
     // Reference to UI elements for player cards and community cards
     public Image playerCard1;
@@ -55,6 +64,11 @@ public class DeckManager : MonoBehaviour
     // Example card sprites (you'll need to set these in the Inspector)
     public Sprite cardBack;  // Back of card sprite
     public Sprite[] cardSprites;  // Array of sprites for all 52 cards
+
+        //initialized objects for players and bots
+    Player player1 = bot1=bot2=bot3=bot4 = new Player();
+
+
 
     void Start()
     {
@@ -97,6 +111,8 @@ public class DeckManager : MonoBehaviour
         // Deal 2 cards to the player
         playerCard1.sprite = GetCardSprite(deck[0]);
         playerCard2.sprite = GetCardSprite(deck[1]);
+        player1.hand.Add(deck[0], deck[1]);
+
 
         // Deal 2 cards to each bot
             botOneCard1.sprite = cardBack;
@@ -185,18 +201,32 @@ public class DeckManager : MonoBehaviour
     {
         Debug.Log("Player folded. Moving to next player/bot.");
         // Logic to handle folding
+        if(player1.active)
+        {
+            discardDeck.Add(player1.hand[0], player1.hand[1];)
+            player1.hand.clear;
+            player1.active = false;
+        }
     }
 
     public void PlayerCalled()
     {
         Debug.Log("Player called. Proceeding with next action.");
         // Logic to handle calling
+        if(player1.active)
+            PlayerCall();
     }
 
     public void PlayerRaised()
     {
         Debug.Log("Player raised the bet.");
         // Logic to handle raising
+        //Ask for input (add RaiseSelection via increment counter)
+        //get raiseAmount
+        //set raise amount as player1.bet
+        if(player1.active )    
+            PlayerRaise(player1.bet);
+    
     }
     
     private int currentRound = 0; 
@@ -336,15 +366,6 @@ public class DeckManager : MonoBehaviour
 
 
 
-
-
-
-
-
-
-    
-    
-
     public void BotAction(int botNumber)
     {
         turnIndicatorText.text = "Bot " + botNumber + "'s Turn";
@@ -397,6 +418,14 @@ public class DeckManager : MonoBehaviour
     else
     {
         Debug.Log("Player does not have enough chips to call.");
+        if(playerChips > 0)
+        {
+            PlayerAllIn;
+        }
+        else
+        {
+            Debug.Log("Player has bet all chips.")
+        }
         // Consider handling this scenario, e.g., player goes all-in
         }
     }
@@ -412,22 +441,51 @@ public class DeckManager : MonoBehaviour
             UpdateUI();
             Debug.Log("Player raises to " + currentBet + " chips.");
     }
-        else
+        else if (raiseAmount < minimumBet && playerChips >= minimumBet)
     {
             Debug.Log("Raise amount must be at least " + minimumBet);
     }
+        else if(playerChips < minimumBet bet)
+        {
+            Debug.log("Player cannot raise.");
+            PlayerAllIn();
+
+        }
+    }
+
+    public void PlayerAllIn()
+    {
+        if(player1.active)
+        {
+            Debug.log("Player is going all in.");
+            potSize += playerChips;
+            player1.bet = player1.chips;
+            playerChips = 0
+            player1.chips = 0
+            UpdateUI();
+        }
     }
 
 
     public void PlayerFold()
     {
         Debug.Log("Player folds");
+        if(player1.active)
+        {
+            player1.bet=0;
+            discardDeck.Add(player1.hand[0], player1.hand[1]);
+            player1.hand.clear;
+            playerCard1.gameObject.SetActive(false);
+            playerCard2.gameObject.SetActive(false);
+            player1.active=false;
+            UpdateUI();
+        }
     // Logic to skip the player's turn or remove them from the current hand
     }
 
 
     public void BotCall(int botIndex)
-        {
+    {
     // Ensure the botIndex is within the valid range
         if (botIndex < 0 || botIndex >= botChips.Length)
         {
