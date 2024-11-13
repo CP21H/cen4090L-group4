@@ -1,0 +1,308 @@
+[
+  {
+    "MountId": "56e62dd7-241f-41e9-8c6b-dd4ca4513e62",
+    "AncestorCsetIds": [
+      6
+    ],
+    "SourceCsetId": 8,
+    "DestinationCsetId": 6,
+    "FileConflicts": [
+      {
+        "Path": "/.git/config",
+        "ItemId": 3113,
+        "ParentItemId": 3103,
+        "BaseRevId": 294,
+        "SourceRevId": 6783,
+        "DestinationRevId": 294
+      },
+      {
+        "Path": "/.git/FETCH_HEAD",
+        "ItemId": 3115,
+        "ParentItemId": 3103,
+        "BaseRevId": 296,
+        "SourceRevId": 6784,
+        "DestinationRevId": 296
+      },
+      {
+        "Path": "/.git/HEAD",
+        "ItemId": 3116,
+        "ParentItemId": 3103,
+        "BaseRevId": 297,
+        "SourceRevId": 6785,
+        "DestinationRevId": 297
+      },
+      {
+        "Path": "/.git/index",
+        "ItemId": 3119,
+        "ParentItemId": 3103,
+        "BaseRevId": 312,
+        "SourceRevId": 6786,
+        "DestinationRevId": 312
+      },
+      {
+        "Path": "/.git/refs/heads/main",
+        "ItemId": 3380,
+        "ParentItemId": 3199,
+        "BaseRevId": 334,
+        "SourceRevId": 6787,
+        "DestinationRevId": 334
+      },
+      {
+        "Path": "/.git/refs/heads/menu-scene",
+        "ItemId": 3381,
+        "ParentItemId": 3199,
+        "BaseRevId": 335,
+        "SourceRevId": 6788,
+        "DestinationRevId": 335
+      },
+      {
+        "Path": "/.git/refs/remotes/origin/main",
+        "ItemId": 3523,
+        "ParentItemId": 3383,
+        "BaseRevId": 339,
+        "SourceRevId": 6789,
+        "DestinationRevId": 339
+      },
+      {
+        "Path": "/.gitignore",
+        "ItemId": 3105,
+        "ParentItemId": 2,
+        "BaseRevId": 340,
+        "SourceRevId": 6790,
+        "DestinationRevId": 340
+      },
+      {
+        "Path": "/Assets/GameManager.cs",
+        "ItemId": 3137,
+        "ParentItemId": 163,
+        "BaseRevId": 3008,
+        "SourceRevId": 6791,
+        "DestinationRevId": 3008
+      },
+      {
+        "Path": "/Assets/GameManager.cs.meta",
+        "ItemId": 3138,
+        "ParentItemId": 163,
+        "BaseRevId": 3009,
+        "SourceRevId": 6792,
+        "DestinationRevId": 3009
+      },
+      {
+        "Path": "/Assets/Scenes/MainMenu.unity",
+        "ItemId": 3335,
+        "ParentItemId": 168,
+        "BaseRevId": 3012,
+        "SourceRevId": 6793,
+        "DestinationRevId": 3012
+      },
+      {
+        "Path": "/Assets/Scenes/MainMenu.unity.meta",
+        "ItemId": 3336,
+        "ParentItemId": 168,
+        "BaseRevId": 3013,
+        "SourceRevId": 6794,
+        "DestinationRevId": 3013
+      },
+      {
+        "Path": "/Assets/Scenes/Settings.unity",
+        "ItemId": 3337,
+        "ParentItemId": 168,
+        "BaseRevId": 3014,
+        "SourceRevId": 6795,
+        "DestinationRevId": 3014
+      },
+      {
+        "Path": "/Assets/Scenes/Settings.unity.meta",
+        "ItemId": 3338,
+        "ParentItemId": 168,
+        "BaseRevId": 3015,
+        "SourceRevId": 6796,
+        "DestinationRevId": 3015
+      },
+      {
+        "Path": "/Assets/Scenes/SinglePlayer.unity",
+        "ItemId": 3339,
+        "ParentItemId": 168,
+        "BaseRevId": 3016,
+        "SourceRevId": 6797,
+        "DestinationRevId": 3016
+      },
+      {
+        "Path": "/Assets/Scenes/SinglePlayer.unity.meta",
+        "ItemId": 3340,
+        "ParentItemId": 168,
+        "BaseRevId": 3017,
+        "SourceRevId": 6798,
+        "DestinationRevId": 3017
+      },
+      {
+        "Path": "/Assets/Scenes/Tutorial.unity",
+        "ItemId": 3341,
+        "ParentItemId": 168,
+        "BaseRevId": 3018,
+        "SourceRevId": 6799,
+        "DestinationRevId": 3018
+      },
+      {
+        "Path": "/Assets/Scenes/Tutorial.unity.meta",
+        "ItemId": 3342,
+        "ParentItemId": 168,
+        "BaseRevId": 3019,
+        "SourceRevId": 6800,
+        "DestinationRevId": 3019
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt.meta",
+        "ItemId": 3463,
+        "ParentItemId": 3346,
+        "BaseRevId": 3024,
+        "SourceRevId": 6801,
+        "DestinationRevId": 3024
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Fonts/LiberationSans.ttf.meta",
+        "ItemId": 3465,
+        "ParentItemId": 3346,
+        "BaseRevId": 3026,
+        "SourceRevId": 6802,
+        "DestinationRevId": 3026
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Drop Shadow.mat.meta",
+        "ItemId": 3840,
+        "ParentItemId": 3466,
+        "BaseRevId": 3029,
+        "SourceRevId": 6804,
+        "DestinationRevId": 3029
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset",
+        "ItemId": 3841,
+        "ParentItemId": 3466,
+        "BaseRevId": 3030,
+        "SourceRevId": 6805,
+        "DestinationRevId": 3030
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Fallback.asset.meta",
+        "ItemId": 3842,
+        "ParentItemId": 3466,
+        "BaseRevId": 3031,
+        "SourceRevId": 6806,
+        "DestinationRevId": 3031
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Outline.mat.meta",
+        "ItemId": 3844,
+        "ParentItemId": 3466,
+        "BaseRevId": 3033,
+        "SourceRevId": 6807,
+        "DestinationRevId": 3033
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset",
+        "ItemId": 3845,
+        "ParentItemId": 3466,
+        "BaseRevId": 3034,
+        "SourceRevId": 6808,
+        "DestinationRevId": 3034
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset.meta",
+        "ItemId": 3846,
+        "ParentItemId": 3466,
+        "BaseRevId": 3035,
+        "SourceRevId": 6809,
+        "DestinationRevId": 3035
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Fonts & Materials.meta",
+        "ItemId": 3468,
+        "ParentItemId": 3349,
+        "BaseRevId": 3036,
+        "SourceRevId": 6803,
+        "DestinationRevId": 3036
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Sprite Assets/EmojiOne.asset.meta",
+        "ItemId": 3848,
+        "ParentItemId": 3473,
+        "BaseRevId": 3042,
+        "SourceRevId": 6811,
+        "DestinationRevId": 3042
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Sprite Assets/House-3.png.meta",
+        "ItemId": 3850,
+        "ParentItemId": 3473,
+        "BaseRevId": 3044,
+        "SourceRevId": 6812,
+        "DestinationRevId": 3044
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Sprite Assets/return.png.meta",
+        "ItemId": 3852,
+        "ParentItemId": 3473,
+        "BaseRevId": 3046,
+        "SourceRevId": 6813,
+        "DestinationRevId": 3046
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Sprite Assets.meta",
+        "ItemId": 3475,
+        "ParentItemId": 3349,
+        "BaseRevId": 3047,
+        "SourceRevId": 6810,
+        "DestinationRevId": 3047
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/Style Sheets.meta",
+        "ItemId": 3478,
+        "ParentItemId": 3349,
+        "BaseRevId": 3050,
+        "SourceRevId": 6814,
+        "DestinationRevId": 3050
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Resources/TMP Settings.asset.meta",
+        "ItemId": 3480,
+        "ParentItemId": 3349,
+        "BaseRevId": 3052,
+        "SourceRevId": 6815,
+        "DestinationRevId": 3052
+      },
+      {
+        "Path": "/Assets/TextMesh Pro/Sprites/EmojiOne.json.meta",
+        "ItemId": 3518,
+        "ParentItemId": 3355,
+        "BaseRevId": 3092,
+        "SourceRevId": 6816,
+        "DestinationRevId": 3092
+      },
+      {
+        "Path": "/ProjectSettings/EditorBuildSettings.asset",
+        "ItemId": 136,
+        "ParentItemId": 129,
+        "BaseRevId": 107,
+        "SourceRevId": 6817,
+        "DestinationRevId": 107
+      },
+      {
+        "Path": "/ProjectSettings/SceneTemplateSettings.json",
+        "ItemId": 3147,
+        "ParentItemId": 129,
+        "BaseRevId": 3100,
+        "SourceRevId": 6818,
+        "DestinationRevId": 3100
+      },
+      {
+        "Path": "/README.md",
+        "ItemId": 3110,
+        "ParentItemId": 2,
+        "BaseRevId": 3101,
+        "SourceRevId": 6819,
+        "DestinationRevId": 3101
+      }
+    ]
+  }
+]
