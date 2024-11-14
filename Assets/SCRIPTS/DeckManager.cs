@@ -21,6 +21,23 @@ public class DeckManager : MonoBehaviour
     public TextMeshProUGUI[] botChipsTexts;
     public TextMeshProUGUI turnIndicatorText; 
 
+    public int smallBlind = 50;  // Default small blind amount
+    public int bigBlind = 100;  // Default big blind amount (double the small blind)
+    private int dealerIndex = 0; // Tracks the dealer position
+    private int smallBlindIndex; // Tracks the player with the small blind
+    private int bigBlindIndex;   // Tracks the player with the big blind
+
+    private int smallBlindPlayer = 0; 
+    private int bigBlindPlayer = 1;
+    public TextMeshProUGUI smallBlindText;
+    public TextMeshProUGUI bigBlindText;
+
+    public TextMeshProUGUI CurrentSmall;
+    public TextMeshProUGUI CurrentBigBlind;
+
+    public TextMeshProUGUI moveHistoryText;
+
+
 
     // Card class representing individual cards
     public class Card
@@ -61,6 +78,7 @@ public class DeckManager : MonoBehaviour
         CreateDeck();
         ShuffleDeck();
         DealInitialCards();
+        SetBlinds();
     }
 
     // Method to create the deck
@@ -154,6 +172,96 @@ public class DeckManager : MonoBehaviour
         return cardBack;  // If no matching sprite is found, return the card back as a fallback
     }
 
+    void SetBlinds()
+    {
+    smallBlindIndex = (dealerIndex + 1) % 5; // Small blind is the next player
+    bigBlindIndex = (dealerIndex + 2) % 5;   // Big blind is the one after small blind
+
+    // Deduct blinds from chips and add to pot
+    if (smallBlindIndex == 0) // Player is small blind
+    {
+        playerChips -= smallBlind;
+        potSize += smallBlind;
+    }
+    else // Bot is small blind
+    {
+        botChips[smallBlindIndex - 1] -= smallBlind;
+        potSize += smallBlind;
+    }
+
+    if (bigBlindIndex == 0) // Player is big blind
+    {
+        playerChips -= bigBlind;
+        potSize += bigBlind;
+        currentBet = bigBlind; // Set current bet to big blind amount
+    }
+    else // Bot is big blind
+    {
+        botChips[bigBlindIndex - 1] -= bigBlind;
+        potSize += bigBlind;
+        currentBet = bigBlind; // Set current bet to big blind amount
+    }
+
+    UpdateUI();
+    }
+
+private void UpdateBlinds()
+{
+    // Update the blind player indices
+    smallBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1); // Move to the next player
+    bigBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1);
+
+    // Update the UI
+    smallBlindText.text = $"Small Blind: {(smallBlindPlayer == 0 ? "Player" : $"Bot {smallBlindPlayer}")}";
+    bigBlindText.text = $"Big Blind: {(bigBlindPlayer == 0 ? "Player" : $"Bot {bigBlindPlayer}")}";
+
+    Debug.Log($"Small Blind: {(smallBlindPlayer == 0 ? "Player" : $"Bot {smallBlindPlayer}")}, " +
+              $"Big Blind: {(bigBlindPlayer == 0 ? "Player" : $"Bot {bigBlindPlayer}")}");
+
+    // Deduct the blinds from the respective players
+    DeductBlinds();
+}
+
+
+
+
+
+
+
+
+
+private void DeductBlinds()
+{
+    int smallBlindAmount = minimumBet;
+    int bigBlindAmount = minimumBet * 2;
+
+    // Deduct chips from the small blind player
+    if (smallBlindPlayer == 0) // Player
+        playerChips -= smallBlindAmount;
+    else // Bot
+        botChips[smallBlindPlayer - 1] -= smallBlindAmount;
+
+    // Deduct chips from the big blind player
+    if (bigBlindPlayer == 0) // Player
+        playerChips -= bigBlindAmount;
+    else // Bot
+        botChips[bigBlindPlayer - 1] -= bigBlindAmount;
+
+    // Add blinds to the pot
+    potSize += smallBlindAmount + bigBlindAmount;
+
+    // Update the UI to reflect new chip counts
+    UpdateUI();
+}
+
+
+
+
+
+
+
+
+
     private void ProcessBotActions()
     { 
         for (int i = 0; i< botActive.Length; i++)
@@ -203,6 +311,11 @@ public class DeckManager : MonoBehaviour
 
     public void AdvanceGameFlow()
     {
+        if(currentRound == 0) // Pre-Flop stage
+    {
+        UpdateBlinds(); // Set blinds at the start of the game
+    }
+
         if(AllBotsFolded()){ 
         Debug.Log("All bots have folded. Skipping to the next round.");
         currentRound++;
@@ -375,7 +488,6 @@ public class DeckManager : MonoBehaviour
         ExecuteWithDelay(1.0f, AdvanceGameFlow);
         }); 
     }
-
     public void UpdateUI()
     {
         potText.text = "Pot: $" + potSize;
@@ -383,49 +495,60 @@ public class DeckManager : MonoBehaviour
 
         for (int i = 0; i < botChips.Length; i++)
         {
-            botChipsTexts[i].text = "$" +  botChips[i];
+        botChipsTexts[i].text = "$" + botChips[i];
         }
-    }
+
+        smallBlindText.text = "Small Blind: $" + smallBlind;
+        bigBlindText.text = "Big Blind: $" + bigBlind;
+}
+
 
     public void PlayerCall()
     {
-    int callAmount = currentBet;
-    if (playerChips >= callAmount)
-    {
+        int callAmount = currentBet;
+        if (playerChips >= callAmount)
+        {
         playerChips -= callAmount;
         potSize += callAmount;
         UpdateUI();
         Debug.Log("Player calls with " + callAmount + " chips.");
-    }
-    else
-    {
-        Debug.Log("Player does not have enough chips to call.");
-        // Consider handling this scenario, e.g., player goes all-in
         }
-    }
+        else
+        {
+        Debug.Log("Player does not have enough chips to call.");
+        // Consider all-in logic here
+        }
+        UpdateMoveHistory("Player calls with $" + currentBet);
 
+    }
 
     public void PlayerRaise(int raiseAmount)
     {
-        if (raiseAmount >= minimumBet && playerChips >= raiseAmount)
+    if (raiseAmount >= currentBet + minimumBet && playerChips >= raiseAmount)
     {
-            currentBet += raiseAmount;
-            playerChips -= currentBet;
-            potSize += currentBet;
-            UpdateUI();
-            Debug.Log("Player raises to " + currentBet + " chips.");
+        currentBet = raiseAmount;
+        playerChips -= raiseAmount;
+        potSize += raiseAmount;
+        UpdateUI();
+        Debug.Log("Player raises to " + currentBet + " chips.");
     }
-        else
+    else
     {
-            Debug.Log("Raise amount must be at least " + minimumBet);
+        Debug.Log("Raise amount must be at least " + (currentBet + minimumBet));
+        }
+    UpdateMoveHistory("Player raises to $" + currentBet);
+
     }
-    }
+
+
 
 
     public void PlayerFold()
     {
         Debug.Log("Player folds");
     // Logic to skip the player's turn or remove them from the current hand
+        UpdateMoveHistory("Player folds");
+
     }
 
 
@@ -451,38 +574,26 @@ public class DeckManager : MonoBehaviour
         Debug.Log("Bot " + botIndex + " does not have enough chips to call.");
         // Consider handling this scenario, e.g., bot goes all-in
         }
+        UpdateMoveHistory("Bot " + (botIndex + 1) + " calls with $" + currentBet);
     }
 
-
-
-
     public void BotRaise(int botIndex, int raiseAmount)
-        {
-            // Ensure the botIndex is within the valid range
-            if (botIndex < 0 || botIndex >= botChips.Length)
-                {
-                    Debug.LogError("Bot index is out of bounds: " + botIndex);
-                    return;
-                }
+    {
+        if (raiseAmount >= currentBet + minimumBet && botChips[botIndex] >= raiseAmount)
+    {
+        currentBet = raiseAmount;
+        botChips[botIndex] -= raiseAmount;
+        potSize += raiseAmount;
+        UpdateUI();
+        Debug.Log("Bot " + (botIndex + 1) + " raises to " + currentBet + " chips.");
+    }
+        else
+    {
+        Debug.Log("Bot " + (botIndex + 1) + " attempted an invalid raise.");
+    }
+        UpdateMoveHistory("Bot " + (botIndex + 1) + " raises to $" + currentBet);
 
-        // Ensure the bot has enough chips to make the raise
-            if (raiseAmount >= minimumBet && botChips[botIndex] >= raiseAmount)
-                {
-                currentBet += raiseAmount;
-                botChips[botIndex] -= raiseAmount;
-                potSize += raiseAmount;
-                UpdateUI();
-                Debug.Log("Bot " + botIndex + " raises to " + currentBet + " chips.");
-                }
-            else
-            {
-                 Debug.Log("Bot " + botIndex + " attempted an invalid raise.");
-            }
-        }
-
-
-
-
+    }
 
     public void BotFold(int botIndex)
     {
@@ -510,6 +621,8 @@ public class DeckManager : MonoBehaviour
 
     // Remove the bot from further actions in the current round
     // (botActive array already ensures this during action processing)
+        UpdateMoveHistory("Bot " + (botIndex + 1) + " folds");
+
     }
 
     
@@ -522,17 +635,20 @@ public class DeckManager : MonoBehaviour
         // Return an integer representing the rank of the hand (higher is better)
         return Random.Range(1, 10); // Randomized for testing
     }
-
     void ResetGame()
     {
         Debug.Log("Resetting the game for the next round.");
         currentRound = 0;
         botActive = new bool[] { true, true, true, true }; // Reset bots as active
+        dealerIndex = (dealerIndex + 1) % 5; // Move dealer to the next player
         CreateDeck();
         ShuffleDeck();
         DealInitialCards();
+        SetBlinds(); // Set blinds for the next round
         UpdateUI();
     }
+
+
 
     // Coroutine to wait for a certain amount of time
     private IEnumerator WaitForAction(float seconds, System.Action action)
@@ -546,6 +662,20 @@ public class DeckManager : MonoBehaviour
     {
         StartCoroutine(WaitForAction(delay, action));
     }
+    public void UpdateMoveHistory(string action)
+    {
+    // Append the new action to the existing text
+    moveHistoryText.text += action + "\n";
+
+    // Optional: Automatically scroll to the bottom
+    Canvas.ForceUpdateCanvases();
+    moveHistoryText.rectTransform.parent.GetComponent<ScrollRect>().verticalNormalizedPosition = 0;
+}
+
+
+
+
+
 }
 
 
