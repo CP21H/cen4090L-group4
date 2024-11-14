@@ -14,6 +14,7 @@ public class DeckManager : MonoBehaviour
     public int currentBet = 0;   // current high bet
 
     private bool[] botActive = { true, true, true, true };
+    private bool playerActive = true;
 
     // ui reference to pota and chips 
     public TextMeshProUGUI potText;
@@ -45,6 +46,7 @@ public class DeckManager : MonoBehaviour
 
     // List to hold the deck of cards
     public List<Card> deck = new List<Card>();
+    //discard deck to hold folded cards until shuffle
     public List<Card> discardDeck = new List<Card>();
 
     // Reference to UI elements for player cards and community cards
@@ -149,6 +151,7 @@ public class DeckManager : MonoBehaviour
             deck.RemoveAt(0);  // Removing the top card after it's dealt
         }
     }
+    
 
     // Method to get the card sprite
     Sprite GetCardSprite(Card card)
@@ -181,6 +184,14 @@ public class DeckManager : MonoBehaviour
         }
     }
 
+    private void ProcessPlayerActions()
+    {
+        if(playerActive)
+        {
+            
+        }
+    }
+
     private bool AllBotsFolded()
     {
         foreach (bool isActive in botActive)
@@ -200,33 +211,23 @@ public class DeckManager : MonoBehaviour
     public void PlayerFolded()
     {
         Debug.Log("Player folded. Moving to next player/bot.");
+        playerActive = false;
         // Logic to handle folding
-        if(player1.active)
-        {
-            discardDeck.Add(player1.hand[0], player1.hand[1];)
-            player1.hand.clear;
-            player1.active = false;
-        }
+        //player hand --> discard deck
+        //take player out of play
     }
 
     public void PlayerCalled()
     {
         Debug.Log("Player called. Proceeding with next action.");
         // Logic to handle calling
-        if(player1.active)
-            PlayerCall();
+        
     }
 
     public void PlayerRaised()
     {
         Debug.Log("Player raised the bet.");
         // Logic to handle raising
-        //Ask for input (add RaiseSelection via increment counter)
-        //get raiseAmount
-        //set raise amount as player1.bet
-        if(player1.active )    
-            PlayerRaise(player1.bet);
-    
     }
     
     private int currentRound = 0; 
