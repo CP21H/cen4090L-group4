@@ -68,7 +68,7 @@ public class DeckManager : MonoBehaviour
     public Sprite[] cardSprites;  // Array of sprites for all 52 cards
 
         //initialized objects for players and bots
-    Player player1 = bot1=bot2=bot3=bot4 = new Player();
+    Player player1 = new Player();
 
 
 
@@ -113,7 +113,8 @@ public class DeckManager : MonoBehaviour
         // Deal 2 cards to the player
         playerCard1.sprite = GetCardSprite(deck[0]);
         playerCard2.sprite = GetCardSprite(deck[1]);
-        player1.hand.Add(deck[0], deck[1]);
+        player1.hand.Add(deck[0]);
+        player1.hand.Add(deck[1]);
 
 
         // Deal 2 cards to each bot
@@ -421,11 +422,11 @@ public class DeckManager : MonoBehaviour
         Debug.Log("Player does not have enough chips to call.");
         if(playerChips > 0)
         {
-            PlayerAllIn;
+            PlayerAllIn();
         }
         else
         {
-            Debug.Log("Player has bet all chips.")
+            Debug.Log("Player has bet all chips.");
         }
         // Consider handling this scenario, e.g., player goes all-in
         }
@@ -446,9 +447,9 @@ public class DeckManager : MonoBehaviour
     {
             Debug.Log("Raise amount must be at least " + minimumBet);
     }
-        else if(playerChips < minimumBet bet)
+        else if(playerChips < minimumBet)
         {
-            Debug.log("Player cannot raise.");
+            Debug.Log("Player cannot raise.");
             PlayerAllIn();
 
         }
@@ -458,11 +459,11 @@ public class DeckManager : MonoBehaviour
     {
         if(player1.active)
         {
-            Debug.log("Player is going all in.");
+            Debug.Log("Player is going all in.");
             potSize += playerChips;
             player1.bet = player1.chips;
-            playerChips = 0
-            player1.chips = 0
+            playerChips = 0;
+            player1.chips = 0;
             UpdateUI();
         }
     }
@@ -474,8 +475,9 @@ public class DeckManager : MonoBehaviour
         if(player1.active)
         {
             player1.bet=0;
-            discardDeck.Add(player1.hand[0], player1.hand[1]);
-            player1.hand.clear;
+            discardDeck.Add(player1.hand[0]);
+            discardDeck.Add(player1.hand[1]);
+            player1.hand = new List<Card>();
             playerCard1.gameObject.SetActive(false);
             playerCard2.gameObject.SetActive(false);
             player1.active=false;
