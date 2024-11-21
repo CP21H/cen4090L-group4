@@ -18,7 +18,7 @@
 
 #### Videos
 - [Increment 1](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%201)
-- [Increment 2]()
+- [Increment 2](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%202)
 - [Increment 3]()
 
 ### Group Members
