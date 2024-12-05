@@ -25,6 +25,8 @@ public class DeckManager : MonoBehaviour
     private int dealerIndex = 0;
     private int smallBlindIndex;
     private int bigBlindIndex;
+    public List<Card> communityCardData = new List<Card>();
+
 
     private int smallBlindPlayer = 0;
     private int bigBlindPlayer = 1;
@@ -112,34 +114,109 @@ public class DeckManager : MonoBehaviour
         }
     }
 
-    void DealInitialCards()
+void DealInitialCards()
+{
+    // Ensure there are enough cards in the deck
+    if (deck.Count < 15)
     {
-        playerCard1.sprite = GetCardSprite(deck[0]);
-        playerCard2.sprite = GetCardSprite(deck[1]);
-
-        botOneCard1.sprite = cardBack;
-        botOneCard2.sprite = cardBack;
-
-        botTwoCard1.sprite = cardBack;
-        botTwoCard2.sprite = cardBack;
-
-        botThreeCard1.sprite = cardBack;
-        botThreeCard2.sprite = cardBack;
-
-        botFourCard1.sprite = cardBack;
-        botFourCard2.sprite = cardBack;
-
-        for (int i = 0; i < 10; i++)
-        {
-            deck.RemoveAt(0);
-        }
-
-        for (int i = 0; i < 5; i++)
-        {
-            communityCards[i].sprite = cardBack;
-            deck.RemoveAt(0);
-        }
+        Debug.LogError("Not enough cards in the deck to deal!");
+        return;
     }
+
+    // Clear any existing data
+    communityCardData.Clear();
+
+    // Assign the first two cards to the player
+    playerCard1.sprite = GetCardSprite(deck[0]);
+    playerCard2.sprite = GetCardSprite(deck[1]);
+    Debug.Log($"Dealt to player: {deck[0].Suit} {deck[0].Rank}, {deck[1].Suit} {deck[1].Rank}");
+
+    // Assign two cards to each bot
+    botOneCard1.sprite = cardBack;
+    botOneCard2.sprite = cardBack;
+
+    botTwoCard1.sprite = cardBack;
+    botTwoCard2.sprite = cardBack;
+
+    botThreeCard1.sprite = cardBack;
+    botThreeCard2.sprite = cardBack;
+
+    botFourCard1.sprite = cardBack;
+    botFourCard2.sprite = cardBack;
+
+    // Remove the dealt cards (2 per player = 10 cards)
+    deck.RemoveRange(0, 10);
+
+    // Assign the next 5 cards to the community (Flop, Turn, River)
+    for (int i = 0; i < 5; i++)
+    {
+        communityCards[i].sprite = cardBack; // Initialize with card back
+        communityCardData.Add(deck[i + 10]); // Add card data to communityCardData
+    }
+    Debug.Log("Community cards dealt and initialized.");
+}
+
+
+void ResetCardVisibility()
+{
+    // Ensure all player and bot cards are visible
+    playerCard1.enabled = true;
+    playerCard2.enabled = true;
+
+    botOneCard1.enabled = true;
+    botOneCard2.enabled = true;
+
+    botTwoCard1.enabled = true;
+    botTwoCard2.enabled = true;
+
+    botThreeCard1.enabled = true;
+    botThreeCard2.enabled = true;
+
+    botFourCard1.enabled = true;
+    botFourCard2.enabled = true;
+
+    // Ensure all community cards are visible
+    foreach (var communityCard in communityCards)
+    {
+        communityCard.enabled = true;
+    }
+}
+
+public void HideBotCards(int botIndex)
+{
+    // Hide specific bot's cards when they fold
+    switch (botIndex)
+    {
+        case 1:
+            botOneCard1.enabled = false;
+            botOneCard2.enabled = false;
+            break;
+        case 2:
+            botTwoCard1.enabled = false;
+            botTwoCard2.enabled = false;
+            break;
+        case 3:
+            botThreeCard1.enabled = false;
+            botThreeCard2.enabled = false;
+            break;
+        case 4:
+            botFourCard1.enabled = false;
+            botFourCard2.enabled = false;
+            break;
+    }
+    Debug.Log($"Bot {botIndex}'s cards are now hidden.");
+}
+
+public void HidePlayerCards()
+{
+    playerCard1.enabled = false;
+    playerCard2.enabled = false;
+    Debug.Log("Player's cards are now hidden.");
+}
+
+
+
+
 
     Sprite GetCardSprite(Card card)
     {
@@ -235,35 +312,37 @@ private void DeductBlinds()
     UpdateUI();
 }
 
-
-void BotFold(int botIndex)
+public void BotFold(int botIndex)
 {
     Debug.Log($"Bot {botIndex} folds.");
     botActive[botIndex - 1] = false; // Mark bot as inactive
 
-    // Optionally hide the bot's cards
+    // Hide bot's cards based on index
     switch (botIndex)
     {
         case 1:
-            botOneCard1.gameObject.SetActive(false);
-            botOneCard2.gameObject.SetActive(false);
+            botOneCard1.enabled = false; // Use 'enabled' to hide the Image
+            botOneCard2.enabled = false;
             break;
         case 2:
-            botTwoCard1.gameObject.SetActive(false);
-            botTwoCard2.gameObject.SetActive(false);
+            botTwoCard1.enabled = false;
+            botTwoCard2.enabled = false;
             break;
         case 3:
-            botThreeCard1.gameObject.SetActive(false);
-            botThreeCard2.gameObject.SetActive(false);
+            botThreeCard1.enabled = false;
+            botThreeCard2.enabled = false;
             break;
         case 4:
-            botFourCard1.gameObject.SetActive(false);
-            botFourCard2.gameObject.SetActive(false);
+            botFourCard1.enabled = false;
+            botFourCard2.enabled = false;
             break;
     }
 
-    
+    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
+    StartNextTurn();
 }
+
+
 
 void BotCall(int botIndex)
 {
@@ -284,22 +363,34 @@ void BotCall(int botIndex)
     }
 }
 
-void BotRaise(int botIndex, int raiseAmount)
+public void BotRaise(int botIndex, int raiseAmount)
 {
-    Debug.Log($"Bot {botIndex} raises.");
-    if (raiseAmount >= currentBet + minimumBet && botChips[botIndex - 1] >= raiseAmount)
+    // Ensure the raise amount is valid (greater than or equal to the minimum bet and less than or equal to the bot's chips)
+    if (raiseAmount >= currentBet + minimumBet && raiseAmount <= botChips[botIndex - 1])
     {
         currentBet = raiseAmount;
         botChips[botIndex - 1] -= raiseAmount;
         potSize += raiseAmount;
+        Debug.Log($"Bot {botIndex} raises to {currentBet}.");
         UpdateUI();
-        
     }
     else
     {
-        Debug.Log($"Bot {botIndex} attempted an invalid raise.");
+        Debug.Log($"Bot {botIndex} attempted an invalid raise of {raiseAmount}.");
+        // Force the bot to take a valid action instead of skipping its turn
+        if (botChips[botIndex - 1] >= currentBet)
+        {
+            Debug.Log($"Bot {botIndex} defaults to calling.");
+            BotCall(botIndex); // Default to calling if raise is invalid
+        }
+        else
+        {
+            Debug.Log($"Bot {botIndex} defaults to folding due to insufficient chips.");
+            BotFold(botIndex); // Fold if calling is not possible
+        }
     }
 }
+
 
 
 private bool isProcessingTurn = false; // Add a flag to track ongoing turns
@@ -308,32 +399,161 @@ public void BotAction(int botIndex)
 {
     if (!botActive[botIndex - 1]) return; // Skip inactive bots
 
-    Debug.Log($"Bot {botIndex}'s turn to act.");
+    int botChipsRemaining = botChips[botIndex - 1];
+    int callAmount = currentBet; // Amount bot needs to call
+    int potOdds = potSize > 0 ? callAmount * 100 / potSize : 0; // Pot odds as a percentage
+    int handStrength = EvaluateHandStrength(botIndex); // Evaluate the bot's hand strength (0-100)
+    int aggressiveness = Random.Range(20, 80); // Adjust aggressiveness factor
 
-    int randomAction = Random.Range(0, 3); // 0 = Fold, 1 = Call, 2 = Raise
-    switch (randomAction)
+    Debug.Log($"Bot {botIndex} hand strength: {handStrength}, pot odds: {potOdds}");
+
+    // Decision logic
+    if (handStrength < potOdds || botChipsRemaining < callAmount) // Weak hand or can't afford to call
     {
-        case 0: // Bot folds
-            Debug.Log($"Bot {botIndex} folds.");
-            botActive[botIndex - 1] = false;
-            break;
-        case 1: // Bot calls
-            Debug.Log($"Bot {botIndex} calls.");
-            BotCall(botIndex);
-            break;
-        case 2: // Bot raises
-            int raiseAmount = Random.Range(minimumBet, Mathf.Min(currentBet + minimumBet, botChips[botIndex - 1]));
-            Debug.Log($"Bot {botIndex} raises to {raiseAmount}.");
-            BotRaise(botIndex, raiseAmount);
-            break;
+        Debug.Log($"Bot {botIndex} folds.");
+        BotFold(botIndex);
+    }
+    else if (handStrength > aggressiveness) // Strong hand or aggressive bot
+    {
+        int raiseAmount = Mathf.Min(Random.Range(currentBet + minimumBet, currentBet + minimumBet * 3), botChipsRemaining);
+        Debug.Log($"Bot {botIndex} raises to {raiseAmount}.");
+        BotRaise(botIndex, raiseAmount);
+    }
+    else // Default action: Call
+    {
+        Debug.Log($"Bot {botIndex} calls.");
+        BotCall(botIndex);
     }
 
-    UpdateUI();
-
-    // Increment index and move to the next turn
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5;
+    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
     StartNextTurn();
 }
+
+private int EvaluateHandStrength(int botIndex)
+{
+    // Get the bot's cards from the deck
+    Card card1, card2;
+    switch (botIndex)
+    {
+        case 1:
+            card1 = deck[2];
+            card2 = deck[3];
+            break;
+        case 2:
+            card1 = deck[4];
+            card2 = deck[5];
+            break;
+        case 3:
+            card1 = deck[6];
+            card2 = deck[7];
+            break;
+        case 4:
+            card1 = deck[8];
+            card2 = deck[9];
+            break;
+        default:
+            Debug.LogError("Invalid bot index.");
+            return 0;
+    }
+
+    // Base hand strength: Combine ranks
+    int rank1 = GetCardRankValue(card1.Rank);
+    int rank2 = GetCardRankValue(card2.Rank);
+    int baseStrength = rank1 + rank2;
+
+    // Pair bonus
+    int pairBonus = (card1.Rank == card2.Rank) ? 30 : 0;
+
+    // Suit bonus (same suit)
+    int suitBonus = (card1.Suit == card2.Suit) ? 10 : 0;
+
+    // Add community card strength
+    int communityBonus = EvaluateCommunityCards(card1, card2);
+
+    // Dynamic position bonus based on the round
+    int positionBonus = EvaluatePositionBonus(botIndex);
+
+    // Final hand strength calculation
+    int handStrength = baseStrength + pairBonus + suitBonus + communityBonus + positionBonus;
+
+    Debug.Log($"Bot {botIndex} hand: {card1.Rank} of {card1.Suit}, {card2.Rank} of {card2.Suit}. Strength: {handStrength}");
+    return Mathf.Clamp(handStrength, 0, 100); // Ensure strength is within bounds
+}
+
+
+private int EvaluateCommunityCards(Card card1, Card card2)
+{
+    int bonus = 0;
+
+    foreach (var communityCard in communityCardData)
+    {
+        // Add bonus for matching ranks
+        if (card1.Rank == communityCard.Rank || card2.Rank == communityCard.Rank)
+            bonus += 15;
+
+        // Add bonus for matching suits
+        if (card1.Suit == communityCard.Suit || card2.Suit == communityCard.Suit)
+            bonus += 5;
+    }
+
+    return bonus;
+}
+
+
+
+
+
+
+
+
+
+private int EvaluatePositionBonus(int botIndex)
+{
+    // Early position is penalized slightly; later position is rewarded
+    int positionBonus = 0;
+
+    if (currentRound == 0) // Pre-Flop
+        positionBonus = (5 - botIndex) * 2; // Later positions get a small bonus
+    else if (currentRound == 1) // Flop
+        positionBonus = (5 - botIndex) * 3;
+    else if (currentRound == 2) // Turn
+        positionBonus = (5 - botIndex) * 4;
+    else if (currentRound == 3) // River
+        positionBonus = (5 - botIndex) * 5;
+
+    return positionBonus;
+}
+
+private int GetCardRankValue(string rank)
+{
+    // Map card ranks to numerical values
+    switch (rank)
+    {
+        case "2": return 2;
+        case "3": return 3;
+        case "4": return 4;
+        case "5": return 5;
+        case "6": return 6;
+        case "7": return 7;
+        case "8": return 8;
+        case "9": return 9;
+        case "10": return 10;
+        case "J": return 11; // Jack
+        case "Q": return 12; // Queen
+        case "K": return 13; // King
+        case "A": return 14; // Ace
+        default:
+            Debug.LogError($"Invalid card rank: {rank}");
+            return 0; // Default to 0 for invalid ranks
+    }
+}
+
+
+
+
+
+
+
 
 
 
@@ -378,8 +598,6 @@ public void BotAction(int botIndex)
 
 void StartNextTurn()
 {
-    Debug.Log("StartNextTurn called.");
-
     // Deactivate all highlights
     playerHighlight.SetActive(false);
     botHighlight1.SetActive(false);
@@ -395,44 +613,53 @@ void StartNextTurn()
         return;
     }
 
-    // Skip inactive bots or players
-    while (currentPlayerIndex != 0 && !botActive[currentPlayerIndex - 1])
+    // Ensure currentPlayerIndex wraps correctly within bounds
+    int loopCounter = 0; // Safety counter to avoid infinite loops
+    while (loopCounter < botActive.Length + 1)
     {
-        Debug.Log($"Skipping inactive bot {currentPlayerIndex}.");
-        currentPlayerIndex = (currentPlayerIndex + 1) % 5;
-    }
-
-    // Highlight the current player or bot
-    if (currentPlayerIndex == 0) // Player's turn
-    {
-        turnIndicatorText.text = "Player's Turn";
-        playerHighlight.SetActive(true);
-        Debug.Log("Waiting for player's action...");
-        // Do not call StartNextTurn() here, wait for player's input
-    }
-    else // Bot's turn
-    {
-        turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
-        switch (currentPlayerIndex)
+        // If it's the player's turn and the player hasn't folded
+        if (currentPlayerIndex == 0 && playerChips > 0)
         {
-            case 1:
-                botHighlight1.SetActive(true);
-                break;
-            case 2:
-                botHighlight2.SetActive(true);
-                break;
-            case 3:
-                botHighlight3.SetActive(true);
-                break;
-            case 4:
-                botHighlight4.SetActive(true);
-                break;
+            turnIndicatorText.text = "Player's Turn";
+            playerHighlight.SetActive(true); // Highlight the player
+            Debug.Log("Player's turn to act.");
+            return;
+        }
+        // If it's a bot's turn and the bot is active
+        else if (currentPlayerIndex > 0 && currentPlayerIndex <= botActive.Length && botActive[currentPlayerIndex - 1])
+        {
+            turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
+            Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
+            // Highlight the active bot
+            switch (currentPlayerIndex)
+            {
+                case 1:
+                    botHighlight1.SetActive(true);
+                    break;
+                case 2:
+                    botHighlight2.SetActive(true);
+                    break;
+                case 3:
+                    botHighlight3.SetActive(true);
+                    break;
+                case 4:
+                    botHighlight4.SetActive(true);
+                    break;
+            }
+            BotAction(currentPlayerIndex); // Perform bot action
+            return;
         }
 
-        // Let the bot act
-        BotAction(currentPlayerIndex);
+        // Move to the next player, wrapping around correctly
+        currentPlayerIndex = (currentPlayerIndex + 1) % (botActive.Length + 1);
+        loopCounter++;
     }
+
+    // If no valid players or bots, log an error (shouldn't happen in a properly designed game)
+    Debug.LogError("No valid players or bots found to take a turn!");
 }
+
+
 
 
 
@@ -452,9 +679,13 @@ bool AllPlayersOrBotsFolded()
 public void PlayerFolded()
 {
     Debug.Log("Player folded. Moving to next turn.");
+    botActive[0] = false; 
+    HidePlayerCards(); // Hide player's cards
     currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
     StartNextTurn();
 }
+
+
 
 public void PlayerCalled()
 {
@@ -469,9 +700,7 @@ public void PlayerCalled()
     {
         Debug.Log("Player doesn't have enough chips to call.");
     }
-
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+    AdvanceTurn();
 }
 
 public void PlayerRaise(int raiseAmount)
@@ -488,10 +717,17 @@ public void PlayerRaise(int raiseAmount)
     {
         Debug.LogError("Invalid raise amount!");
     }
+    AdvanceTurn();
+}
 
+void AdvanceTurn()
+{
     currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
     StartNextTurn();
 }
+
+
+
 
 bool IsRoundComplete()
 {
