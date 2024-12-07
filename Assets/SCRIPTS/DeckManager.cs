@@ -23,8 +23,8 @@ public class DeckManager : MonoBehaviour
     public int smallBlind = 50;
     public int bigBlind = 100;
     private int dealerIndex = 0;
-    private int smallBlindIndex;
-    private int bigBlindIndex;
+    private int smallBlindIndex = 0;
+    private int bigBlindIndex = 1;
     public List<Card> communityCardData = new List<Card>();
 
 
@@ -47,6 +47,12 @@ public class DeckManager : MonoBehaviour
 
     private int currentPlayerIndex = 0;
     private bool bettingRoundInProgress = false;
+
+    [SerializeField] private TextMeshProUGUI playerBlindIndicator;
+
+    [SerializeField] private TextMeshProUGUI[] botBlindIndicators;
+
+
 
     public class Card
     {
@@ -270,23 +276,63 @@ public void UpdateRaiseSlider(Slider slider)
     slider.maxValue = playerChips; // Update slider max value to match player's chips
 }
 
-
 private void UpdateBlinds()
 {
+    Debug.Log("UpdateBlinds called"); // Keep the debug log for confirmation
+
+    // Clear previous indicators
+    playerBlindIndicator.text = "";
+    foreach (var indicator in botBlindIndicators)
+    {
+        indicator.text = "";
+    }
+
     // Update the blind player indices
-    smallBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1); // Move to the next player
-    bigBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1);
+    smallBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1); // Rotate to the next player
+    bigBlindPlayer = (smallBlindPlayer + 1) % (botChips.Length + 1); // Big blind follows small blind
 
-    // Update the UI
-    smallBlindText.text = $"Small Blind: {(smallBlindPlayer == 0 ? "Player" : $"Bot {smallBlindPlayer}")}";
-    bigBlindText.text = $"Big Blind: {(bigBlindPlayer == 0 ? "Player" : $"Bot {bigBlindPlayer}")}";
+    Debug.Log($"Small Blind Player: {smallBlindPlayer}, Big Blind Player: {bigBlindPlayer}");
 
-    Debug.Log($"Small Blind: {(smallBlindPlayer == 0 ? "Player" : $"Bot {smallBlindPlayer}")}, " +
-              $"Big Blind: {(bigBlindPlayer == 0 ? "Player" : $"Bot {bigBlindPlayer}")}");
+    // Update and set indicators for the new blinds
+    if (smallBlindPlayer == 0)
+    {
+        playerBlindIndicator.text = "Small Blind";
+        Debug.Log("Player is Small Blind");
+    }
+    else
+    {
+        botBlindIndicators[smallBlindPlayer - 1].text = "Small Blind";
+        Debug.Log($"Bot {smallBlindPlayer} is Small Blind");
+    }
 
-    // Deduct the blinds from the respective players
+    if (bigBlindPlayer == 0)
+    {
+        playerBlindIndicator.text = "Big Blind";
+        Debug.Log("Player is Big Blind");
+    }
+    else
+    {
+        botBlindIndicators[bigBlindPlayer - 1].text = "Big Blind";
+        Debug.Log($"Bot {bigBlindPlayer} is Big Blind");
+    }
+
+    // Deduct blinds for the new round
     DeductBlinds();
 }
+
+
+
+
+// Resets all blind indicators (hides them)
+private void ResetBlindIndicators()
+{
+    playerBlindIndicator.gameObject.SetActive(false);
+    foreach (var indicator in botBlindIndicators)
+    {
+        indicator.gameObject.SetActive(false);
+    }
+}
+
 
 private void DeductBlinds()
 {
@@ -294,16 +340,28 @@ private void DeductBlinds()
     int bigBlindAmount = minimumBet * 2;
 
     // Deduct chips from the small blind player
-    if (smallBlindPlayer == 0) // Player
+    if (smallBlindPlayer == 0) // Player is the small blind
+    {
         playerChips -= smallBlindAmount;
-    else // Bot
+        Debug.Log($"Player pays small blind: {smallBlindAmount}");
+    }
+    else // A bot is the small blind
+    {
         botChips[smallBlindPlayer - 1] -= smallBlindAmount;
+        Debug.Log($"Bot {smallBlindPlayer} pays small blind: {smallBlindAmount}");
+    }
 
     // Deduct chips from the big blind player
-    if (bigBlindPlayer == 0) // Player
+    if (bigBlindPlayer == 0) // Player is the big blind
+    {
         playerChips -= bigBlindAmount;
-    else // Bot
+        Debug.Log($"Player pays big blind: {bigBlindAmount}");
+    }
+    else // A bot is the big blind
+    {
         botChips[bigBlindPlayer - 1] -= bigBlindAmount;
+        Debug.Log($"Bot {bigBlindPlayer} pays big blind: {bigBlindAmount}");
+    }
 
     // Add blinds to the pot
     potSize += smallBlindAmount + bigBlindAmount;
@@ -311,6 +369,9 @@ private void DeductBlinds()
     // Update the UI to reflect new chip counts
     UpdateUI();
 }
+
+
+
 
 public void BotFold(int botIndex)
 {
@@ -400,7 +461,7 @@ public void BotAction(int botIndex)
     if (!botActive[botIndex - 1]) return; // Skip inactive bots
 
     int botChipsRemaining = botChips[botIndex - 1];
-    int callAmount = currentBet; // Amount bot needs to call
+    int callAmount = currentBet - (botChipsRemaining >= currentBet ? 0 : botChipsRemaining); // Amount bot needs to call
     int potOdds = potSize > 0 ? callAmount * 100 / potSize : 0; // Pot odds as a percentage
     int handStrength = EvaluateHandStrength(botIndex); // Evaluate the bot's hand strength (0-100)
     int aggressiveness = Random.Range(20, 80); // Adjust aggressiveness factor
@@ -415,9 +476,17 @@ public void BotAction(int botIndex)
     }
     else if (handStrength > aggressiveness) // Strong hand or aggressive bot
     {
-        int raiseAmount = Mathf.Min(Random.Range(currentBet + minimumBet, currentBet + minimumBet * 3), botChipsRemaining);
-        Debug.Log($"Bot {botIndex} raises to {raiseAmount}.");
-        BotRaise(botIndex, raiseAmount);
+        int raiseAmount = Mathf.Min(currentBet + Random.Range(minimumBet, minimumBet * 3), botChipsRemaining);
+        if (raiseAmount > currentBet) // Only raise if it's valid
+        {
+            Debug.Log($"Bot {botIndex} raises to {raiseAmount}.");
+            BotRaise(botIndex, raiseAmount);
+        }
+        else // If the raise is invalid, default to calling
+        {
+            Debug.Log($"Bot {botIndex}'s raise amount was invalid. Defaulting to call.");
+            BotCall(botIndex);
+        }
     }
     else // Default action: Call
     {
@@ -428,6 +497,7 @@ public void BotAction(int botIndex)
     currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
     StartNextTurn();
 }
+
 
 private int EvaluateHandStrength(int botIndex)
 {
@@ -598,6 +668,8 @@ private int GetCardRankValue(string rank)
 
 void StartNextTurn()
 {
+    Debug.Log($"CurrentPlayerIndex: {currentPlayerIndex}");
+
     // Deactivate all highlights
     playerHighlight.SetActive(false);
     botHighlight1.SetActive(false);
@@ -622,14 +694,15 @@ void StartNextTurn()
         {
             turnIndicatorText.text = "Player's Turn";
             playerHighlight.SetActive(true); // Highlight the player
-            Debug.Log("Player's turn to act.");
-            return;
+            Debug.Log("Waiting for player input...");
+            return; // STOP here and WAIT for player input
         }
         // If it's a bot's turn and the bot is active
         else if (currentPlayerIndex > 0 && currentPlayerIndex <= botActive.Length && botActive[currentPlayerIndex - 1])
         {
             turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
             Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
+            
             // Highlight the active bot
             switch (currentPlayerIndex)
             {
@@ -646,6 +719,7 @@ void StartNextTurn()
                     botHighlight4.SetActive(true);
                     break;
             }
+
             BotAction(currentPlayerIndex); // Perform bot action
             return;
         }
@@ -657,6 +731,20 @@ void StartNextTurn()
 
     // If no valid players or bots, log an error (shouldn't happen in a properly designed game)
     Debug.LogError("No valid players or bots found to take a turn!");
+}
+
+
+
+
+
+// Helper function to reset all highlights
+void ResetHighlights()
+{
+    playerHighlight.SetActive(false);
+    botHighlight1.SetActive(false);
+    botHighlight2.SetActive(false);
+    botHighlight3.SetActive(false);
+    botHighlight4.SetActive(false);
 }
 
 
@@ -678,14 +766,11 @@ bool AllPlayersOrBotsFolded()
 
 public void PlayerFolded()
 {
-    Debug.Log("Player folded. Moving to next turn.");
-    botActive[0] = false; 
+    Debug.Log("Player folded.");
+    botActive[0] = false; // Mark player as inactive
     HidePlayerCards(); // Hide player's cards
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+    AdvanceTurn(); // Advance after player action
 }
-
-
 
 public void PlayerCalled()
 {
@@ -698,9 +783,9 @@ public void PlayerCalled()
     }
     else
     {
-        Debug.Log("Player doesn't have enough chips to call.");
+        Debug.LogWarning("Player doesn't have enough chips to call.");
     }
-    AdvanceTurn();
+    AdvanceTurn(); // Advance after player action
 }
 
 public void PlayerRaise(int raiseAmount)
@@ -715,10 +800,15 @@ public void PlayerRaise(int raiseAmount)
     }
     else
     {
-        Debug.LogError("Invalid raise amount!");
+        Debug.LogWarning("Invalid raise amount.");
     }
-    AdvanceTurn();
+    AdvanceTurn(); // Advance after player action
 }
+
+
+
+
+
 
 void AdvanceTurn()
 {
@@ -776,9 +866,16 @@ public void AdvanceGameFlow()
         case 3: // River complete, move to Showdown
             PerformShowdown();
             currentRound = 0; // Reset for the next game
+
+            // Update blinds and start with the new small blind
+            UpdateBlinds();
+            currentPlayerIndex = smallBlindPlayer; // Betting starts with the small blind
+            StartNextTurn(); // Begin the new betting round
             break;
     }
 }
+
+
 
 public AudioClip soundFX;
 
