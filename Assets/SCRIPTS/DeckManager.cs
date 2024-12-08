@@ -20,7 +20,7 @@ public class DeckManager : MonoBehaviour
     public TextMeshProUGUI potText;
     public TextMeshProUGUI playerChipsText;
     public TextMeshProUGUI[] botChipsTexts;
-    public TextMeshProUGUI turnIndicatorText; 
+    public TextMeshProUGUI turnIndicatorText;
 
     //Class for players (and bots)
     public class Player 
@@ -67,10 +67,7 @@ public class DeckManager : MonoBehaviour
     public Sprite cardBack;  // Back of card sprite
     public Sprite[] cardSprites;  // Array of sprites for all 52 cards
 
-        //initialized objects for players and bots
-    Player player1 = new Player();
-
-
+    private int currentRound = 0;
 
     void Start()
     {
@@ -107,14 +104,25 @@ public class DeckManager : MonoBehaviour
         }
     }
 
-    // Method to deal initial cards to the player and bots
-    void DealInitialCards()
+void DealInitialCards()
+{
+    // Ensure there are enough cards in the deck
+    if (deck.Count < 15)
     {
-        // Deal 2 cards to the player
-        playerCard1.sprite = GetCardSprite(deck[0]);
-        playerCard2.sprite = GetCardSprite(deck[1]);
-        player1.hand.Add(deck[0]);
-        player1.hand.Add(deck[1]);
+        Debug.LogError("Not enough cards in the deck to deal!");
+        return;
+    }
+
+    // Clear any existing data
+    communityCardData.Clear();
+
+    // Assign the first two cards to the player
+    playerCard1.sprite = GetCardSprite(deck[0]);
+    playerCard2.sprite = GetCardSprite(deck[1]);
+    player1.hand.Add(deck[0]);
+    player1.hand.Add(deck[1]);
+
+    Debug.Log($"Dealt to player: {deck[0].Suit} {deck[0].Rank}, {deck[1].Suit} {deck[1].Rank}");
 
 
         // Deal 2 cards to each bot
@@ -130,29 +138,89 @@ public class DeckManager : MonoBehaviour
             botFourCard1.sprite = cardBack;
             botFourCard2.sprite = cardBack;
 
+    // Remove the dealt cards (2 per player = 10 cards)
+    deck.RemoveRange(0, 10);
+
+    // Assign the next 5 cards to the community (Flop, Turn, River)
+    for (int i = 0; i < 5; i++)
+    {
+        communityCards[i].sprite = cardBack; // Initialize with card back
+        communityCardData.Add(deck[i + 10]); // Add card data to communityCardData
+    }
+    Debug.Log("Community cards dealt and initialized.");
+}
 
 
-        
-
-        // Remove dealt cards from the deck (2 cards for each player and bot = 10 cards)
-        for (int i = 0; i < 10; i++)
-        {
-            deck.RemoveAt(0);
-        }
+void ResetCardVisibility()
+{
+    // Ensure all player and bot cards are visible
+    playerCard1.enabled = true;
+    playerCard2.enabled = true;
 
         // Deal 5 community cards (Flop, Turn, River)
         for (int i = 0; i < 5; i++)
         {
             communityCards[i].sprite = cardBack;
         }
+    botOneCard1.enabled = true;
+    botOneCard2.enabled = true;
 
         // Remove community cards from the deck
         for (int i = 0; i < 5; i++)
         {
             deck.RemoveAt(0);  // Removing the top card after it's dealt
         }
+    botTwoCard1.enabled = true;
+    botTwoCard2.enabled = true;
+
+    botThreeCard1.enabled = true;
+    botThreeCard2.enabled = true;
+
+    botFourCard1.enabled = true;
+    botFourCard2.enabled = true;
+
+    // Ensure all community cards are visible
+    foreach (var communityCard in communityCards)
+    {
+        communityCard.enabled = true;
     }
-    
+}
+
+public void HideBotCards(int botIndex)
+{
+    // Hide specific bot's cards when they fold
+    switch (botIndex)
+    {
+        case 1:
+            botOneCard1.enabled = false;
+            botOneCard2.enabled = false;
+            break;
+        case 2:
+            botTwoCard1.enabled = false;
+            botTwoCard2.enabled = false;
+            break;
+        case 3:
+            botThreeCard1.enabled = false;
+            botThreeCard2.enabled = false;
+            break;
+        case 4:
+            botFourCard1.enabled = false;
+            botFourCard2.enabled = false;
+            break;
+    }
+    Debug.Log($"Bot {botIndex}'s cards are now hidden.");
+}
+
+public void HidePlayerCards()
+{
+    playerCard1.enabled = false;
+    playerCard2.enabled = false;
+    Debug.Log("Player's cards are now hidden.");
+}
+
+
+
+
 
     // Method to get the card sprite
     Sprite GetCardSprite(Card card)
@@ -343,7 +411,8 @@ public class DeckManager : MonoBehaviour
                 bestHandRank = handRank;
                 bestPlayer = player;
             }
-        }   
+        }
+    }
 
         if (bestPlayer == 0)
         {
@@ -510,11 +579,28 @@ public class DeckManager : MonoBehaviour
         // Consider handling this scenario, e.g., bot goes all-in
         }
     }
+    StartCoroutine(WaitForAction(delay, action));
+}
 
+private IEnumerator WaitForAction(float seconds, System.Action action)
+{
+    yield return new WaitForSeconds(seconds);
 
+    if (action != null)
+    {
+        action.Invoke();
+    }
+}
 
+ 
+
+    public void UpdateUI()
+    {
+        potText.text = "Pot: $" + potSize;
+        playerChipsText.text = "$" + playerChips;
 
     public void BotRaise(int botIndex, int raiseAmount)
+        for (int i = 0; i < botChips.Length; i++)
         {
             // Ensure the botIndex is within the valid range
             if (botIndex < 0 || botIndex >= botChips.Length)
@@ -522,6 +608,9 @@ public class DeckManager : MonoBehaviour
                     Debug.LogError("Bot index is out of bounds: " + botIndex);
                     return;
                 }
+            botChipsTexts[i].text = "$" + botChips[i];
+        }
+    }
 
         // Ensure the bot has enough chips to make the raise
             if (raiseAmount >= minimumBet && botChips[botIndex] >= raiseAmount)
@@ -533,37 +622,60 @@ public class DeckManager : MonoBehaviour
                 Debug.Log("Bot " + botIndex + " raises to " + currentBet + " chips.");
                 }
             else
+    void RevealFlop()
+    {
+        AudioSource.PlayClipAtPoint(soundFX, Camera.main.transform.position);
+        communityCards[0].sprite = GetCardSprite(deck[0]);
+        communityCards[1].sprite = GetCardSprite(deck[1]);
+        communityCards[2].sprite = GetCardSprite(deck[2]);
+
+            for (int i = 0; i < 3; i++)
             {
                  Debug.Log("Bot " + botIndex + " attempted an invalid raise.");
+             deck.RemoveAt(0);
             }
-        }
 
+    }
 
+    void RevealTurn()
+    {
+        communityCards[3].sprite = GetCardSprite(deck[0]);
+        deck.RemoveAt(0); // Remove the turn card from the deck
 
-
+    }
 
     public void BotFold(int botIndex)
+    void RevealRiver()
     {
         Debug.Log("Bot " + botIndex + " folds");
         botActive[botIndex - 1] = false; 
         switch (botIndex)
+        communityCards[4].sprite = GetCardSprite(deck[0]);
+        deck.RemoveAt(0); // Remove the turn card from the deck
+
+
+        }
+
+    void RevealBotCards(int botIndex)
         {
-            case 1:
-                botOneCard1.gameObject.SetActive(false);
-                botOneCard2.gameObject.SetActive(false);
-                break;
-            case 2:
-                botTwoCard1.gameObject.SetActive(false);
-                botTwoCard2.gameObject.SetActive(false);
-                break;
-            case 3:
-                botThreeCard1.gameObject.SetActive(false);
-                botThreeCard2.gameObject.SetActive(false);
-                break;
-            case 4:
-                botFourCard1.gameObject.SetActive(false);
-                botFourCard2.gameObject.SetActive(false);
-                break;
+            switch (botIndex)
+                {
+                    case 1:
+                        botOneCard1.sprite = GetCardSprite(deck[2]);
+                        botOneCard2.sprite = GetCardSprite(deck[3]);
+                        break;
+                     case 2:
+                        botTwoCard1.sprite = GetCardSprite(deck[4]);
+                        botTwoCard2.sprite = GetCardSprite(deck[5]);
+                        break;
+                    case 3:
+                        botThreeCard1.sprite = GetCardSprite(deck[6]);
+                        botThreeCard2.sprite = GetCardSprite(deck[7]);
+                        break;
+                    case 4:
+                        botFourCard1.sprite = GetCardSprite(deck[8]);
+                        botFourCard2.sprite = GetCardSprite(deck[9]);
+                        break;
             }
 
     // Remove the bot from further actions in the current round
@@ -585,7 +697,6 @@ public class DeckManager : MonoBehaviour
     {
         Debug.Log("Resetting the game for the next round.");
         currentRound = 0;
-        botActive = new bool[] { true, true, true, true }; // Reset bots as active
         CreateDeck();
         ShuffleDeck();
         DealInitialCards();
@@ -604,6 +715,19 @@ public class DeckManager : MonoBehaviour
     {
         StartCoroutine(WaitForAction(delay, action));
     }
+void ResetGame()
+{
+    Debug.Log("Resetting game for the next round.");
+
+    currentRound = 0;
+    botActive = new bool[] { true, true, true, true }; // Reset bots as active
+    dealerIndex = (dealerIndex + 1) % 5; // Move dealer position to the next player
+    CreateDeck();
+    ShuffleDeck();
+    DealInitialCards();
+    SetBlinds();
+    UpdateUI();
+    StartBettingRound(); // Start the first betting round of the new game
 }
 
 
@@ -614,38 +738,56 @@ public class DeckManager : MonoBehaviour
 
 
 
+    void PerformShowdown()
+    {
+        Debug.Log("Showdown! Comparing hands to determine the winner.");
 
+    // Reveal each bot's cards if they are still active
+        for (int i = 0; i < botActive.Length; i++)
+        {
+            if (botActive[i])
+            {
+                RevealBotCards(i + 1); // Bot IDs are 1-based
+            }
+        }
 
+    // Assume player and bots are in a list for comparison
+        List<int> activePlayers = new List<int> { 0 }; // 0 for the player
+        for (int i = 0; i < botActive.Length; i++)
+        {
+            if (botActive[i])
+            activePlayers.Add(i + 1); // Adding active bots to the list
+        }
 
+        // For simplicity, assume a method EvaluateHand that returns a hand ranking
+        int bestPlayer = -1;
+        int bestHandRank = -1;
 
+        foreach (int player in activePlayers)
+        {
+            int handRank = EvaluateHand(player);
+            if (handRank > bestHandRank)
+            {
+                bestHandRank = handRank;
+                bestPlayer = player;
+            }
+        }   
 
+        if (bestPlayer == 0)
+        {
+            Debug.Log("The player wins the pot!");
+            playerChips += potSize; // Award pot to player
+        }
+        else
+        {
+            Debug.Log("Bot " + bestPlayer + " wins the pot!");
+            botChips[bestPlayer - 1] += potSize; // Award pot to the winning bot
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        potSize = 0; // Reset pot for the next round
+        UpdateUI();
+        ResetGame();
+        }
+}
 
 
