@@ -18,7 +18,14 @@ public class GameManager : MonoBehaviour
         
     }
 
-    public void changeScene() {
+    public void ChangeSceneWithDelay(string sceneName)
+    {
+        StartCoroutine(SceneChangeCoroutine(sceneName));
+    }
+
+    private IEnumerator SceneChangeCoroutine(string sceneName)
+    {
+        yield return new WaitForSeconds(0.2f); // Adjust this delay as needed
         SceneManager.LoadScene(sceneName);
     }
 
