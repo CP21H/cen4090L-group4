@@ -382,11 +382,11 @@ public class DeckManager : MonoBehaviour
                     BotFold(botNumber);
                     break;
                 case 1:
-                    BotCall(botNumber);
+                    BotCall(botNumber-1);
                     break;
                 case 2:
                     int raiseAmount = Random.Range(minimumBet, minimumBet * 3);
-                    BotRaise(botNumber, raiseAmount); 
+                    BotRaise(botNumber-1, raiseAmount); 
                     break;
             }
         UpdateUI(); 
