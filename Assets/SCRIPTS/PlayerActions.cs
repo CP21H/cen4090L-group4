@@ -12,7 +12,11 @@ public class PlayerActions : MonoBehaviour
 
     private DeckManager deckManager;  // Reference to DeckManager for game flow control
 
+<<<<<<< Updated upstream
     public List<Card> playerHand = new();
+=======
+    //public List<Card> playerHand = new();
+>>>>>>> Stashed changes
 
 
     void Start()
