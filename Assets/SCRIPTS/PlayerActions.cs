@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections.Generic;
+//using System.Collections.Generic;
 
 public class PlayerActions : MonoBehaviour
 {
@@ -9,14 +9,13 @@ public class PlayerActions : MonoBehaviour
     public Button callButton;   // Button for Call
     public Button raiseButton;  // Button for Raise
     public TMP_InputField raiseInputField; 
+    public Slider raiseSlider;  // Slider for raise amount
+    public TextMeshProUGUI sliderValueText; // Text to display the slider value
 
     private DeckManager deckManager;  // Reference to DeckManager for game flow control
 
-<<<<<<< Updated upstream
-    public List<Card> playerHand = new();
-=======
-    //public List<Card> playerHand = new();
->>>>>>> Stashed changes
+    /*public List<Card> playerHand = new();*/
+
 
 
     void Start()
@@ -28,13 +27,21 @@ public class PlayerActions : MonoBehaviour
         foldButton.onClick.AddListener(Fold);
         callButton.onClick.AddListener(Call);
         raiseButton.onClick.AddListener(Raise);
+
+        // Attach slider listener
+        raiseSlider.onValueChanged.AddListener(UpdateSliderText);
+
+        // Initialize slider values
+        raiseSlider.minValue = deckManager.minimumBet;
+        raiseSlider.maxValue = deckManager.playerChips;
+        raiseSlider.value = deckManager.minimumBet;
+        UpdateSliderText(raiseSlider.value);
     }
 
     void Fold()
     {
         Debug.Log("Player folds");
         // Handle folding logic, perhaps notify DeckManager to skip player's turn
-        
         deckManager.PlayerFolded();
         deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);  
     }
@@ -52,31 +59,63 @@ public class PlayerActions : MonoBehaviour
     
     }
 
+
+
     void Raise()
     {
-    int raiseAmount;
-    if (int.TryParse(raiseInputField.text, out raiseAmount))
-    {
-        // Check if the raise amount is within a reasonable range (e.g., not exceeding player's chips)
+        int raiseAmount = Mathf.RoundToInt(raiseSlider.value); // Use slider value for the raise
         if (raiseAmount > 0 && raiseAmount <= deckManager.playerChips)
         {
             deckManager.PlayerRaise(raiseAmount);
-            deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);  
+            deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);
         }
         else
         {
             Debug.Log("Raise amount is invalid or exceeds available chips.");
         }
     }
-    else
+
+
+    void UpdateSliderText(float value)
     {
-        Debug.Log("Invalid raise amount.");
+        sliderValueText.text = "$" + Mathf.RoundToInt(value); // Update the slider value text
     }
-}
+
+    
+    public void UpdateSliderRange()
+    {
+        raiseSlider.minValue = deckManager.currentBet + deckManager.minimumBet;
+        raiseSlider.maxValue = deckManager.playerChips;
+
+        if (raiseSlider.value < raiseSlider.minValue)
+        {
+            raiseSlider.value = raiseSlider.minValue;
+        }
+
+        UpdateSliderText(raiseSlider.value);
+    }
 
 
-
-
-
+    /*void Raise()
+    {
+        int raiseAmount;
+        if (int.TryParse(raiseInputField.text, out raiseAmount))
+        {
+            // Check if the raise amount is within a reasonable range (e.g., not exceeding player's chips)
+            if (raiseAmount > 0 && raiseAmount <= deckManager.playerChips)
+            {
+             deckManager.PlayerRaise(raiseAmount);
+             deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);  
+            }
+            else
+            {
+                Debug.Log("Raise amount is invalid or exceeds available chips.");
+            }
+        }
+        else
+        {
+            Debug.Log("Invalid raise amount.");
+        }
+    }*/
 
 }
