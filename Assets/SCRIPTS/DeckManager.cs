@@ -12,7 +12,7 @@ public class DeckManager : MonoBehaviour
     public int minimumBet = 50;
     public int currentBet = 0;
 
-    private bool[] botActive = { true, true, true, true };
+    private bool[] botActive = { true, true, true, true, true };    //added position for player 
 
     // UI references
     public TextMeshProUGUI potText;
@@ -22,7 +22,7 @@ public class DeckManager : MonoBehaviour
 
     public int smallBlind = 50;
     public int bigBlind = 100;
-    private int dealerIndex = 0;
+    private int dealerIndex = 0;    //initializes player as the dealer
     private int smallBlindIndex = 0;
     private int bigBlindIndex = 1;
     public List<Card> communityCardData = new List<Card>();
@@ -159,6 +159,7 @@ void DealInitialCards()
         communityCards[i].sprite = cardBack; // Initialize with card back
         communityCardData.Add(deck[i + 10]); // Add card data to communityCardData
     }
+    //ResetCardVisibility();
     Debug.Log("Community cards dealt and initialized.");
 }
 
@@ -375,7 +376,7 @@ private void DeductBlinds()
 
 public void BotFold(int botIndex)
 {
-    Debug.Log($"Bot {botIndex} folds.");
+    //Debug.Log($"Bot {botIndex} folds.");
     botActive[botIndex - 1] = false; // Mark bot as inactive
 
     // Hide bot's cards based on index
@@ -399,8 +400,9 @@ public void BotFold(int botIndex)
             break;
     }
 
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+        //duplicate turn increment and call to start next turn
+    /*currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
+    StartNextTurn();*/
 }
 
 
@@ -474,7 +476,7 @@ public void BotAction(int botIndex)
         Debug.Log($"Bot {botIndex} folds.");
         BotFold(botIndex);
     }
-    else if (handStrength > aggressiveness) // Strong hand or aggressive bot
+    else if (handStrength > aggressiveness) // Strong hand or aggressive bot    (smaller num = more aggressive)
     {
         int raiseAmount = Mathf.Min(currentBet + Random.Range(minimumBet, minimumBet * 3), botChipsRemaining);
         if (raiseAmount > currentBet) // Only raise if it's valid
@@ -660,6 +662,7 @@ private int GetCardRankValue(string rank)
 
     void StartBettingRound()
 {
+        //does this skip players turn if dealerindex is 0: (5 players + 1 dealer) %5?
     currentPlayerIndex = (dealerIndex + 1) % 5; // Start with the player after the dealer
     bettingRoundInProgress = true;
     Debug.Log("Starting betting round.");
@@ -690,11 +693,12 @@ void StartNextTurn()
     while (loopCounter < botActive.Length + 1)
     {
         // If it's the player's turn and the player hasn't folded
-        if (currentPlayerIndex == 0 && playerChips > 0)
+        if (currentPlayerIndex == 0 && playerChips > 0 && playerCard1.enabled && playerCard2.enabled)
         {
             turnIndicatorText.text = "Player's Turn";
             playerHighlight.SetActive(true); // Highlight the player
             Debug.Log("Waiting for player input...");
+            
             return; // STOP here and WAIT for player input
         }
         // If it's a bot's turn and the bot is active
@@ -938,9 +942,7 @@ private IEnumerator WaitForAction(float seconds, System.Action action)
     {
         communityCards[4].sprite = GetCardSprite(deck[0]);
         deck.RemoveAt(0); // Remove the turn card from the deck
-
-
-        }
+    }
 
     void RevealBotCards(int botIndex)
         {

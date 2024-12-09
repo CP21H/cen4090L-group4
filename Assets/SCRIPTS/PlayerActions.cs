@@ -33,6 +33,12 @@ public class PlayerActions : MonoBehaviour
         UpdateSliderText(raiseSlider.value);
     }
 
+
+    /*void WaitForPlayerAction()
+    {
+
+    }*/
+
     void Fold()
     {
         Debug.Log("Player folds");
