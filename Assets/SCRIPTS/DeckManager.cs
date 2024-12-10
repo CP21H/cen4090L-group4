@@ -3,6 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+//using UnityEditor.Tilemaps;
+//using System.Linq.Expressions;
+//using Unity.VisualScripting;
 
 public class DeckManager : MonoBehaviour
 {
@@ -11,6 +14,8 @@ public class DeckManager : MonoBehaviour
     public int potSize = 0;
     public int minimumBet = 50;
     public int currentBet = 0;
+    public enum PlayerType{player, bot}
+    public bool roundOver=false;
 
     private bool[] botActive = { true, true, true, true, true };    //added position for player 
 
@@ -26,6 +31,7 @@ public class DeckManager : MonoBehaviour
     private int smallBlindIndex = 0;
     private int bigBlindIndex = 1;
     public List<Card> communityCardData = new List<Card>();
+    public int turnsTaken=0;
 
 
     private int smallBlindPlayer = 0;
@@ -52,7 +58,47 @@ public class DeckManager : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI[] botBlindIndicators;
 
+    
+   /* public class Player
+    {
+        public string name = null;
+        public PlayerType type;
+        public int totalChips = 1000;
+        public int chipsBetThisRound = 0;
+        public bool isSmallBlind=false;
+        public bool isBigBlind=false;
+        public bool isActive = true;
+        public bool turnTaken = false;
+        public int turnPosition = 0;
 
+        public Image card1;
+        public Image card2;
+        public GameObject highlight;
+
+        private int playerHandRank=0;
+        private int playerPotOdds=0;
+        private bool isWinning = false;
+
+        
+        public Player(){type = PlayerType.bot; name="Bot";}
+
+        
+        public Player(string n, PlayerType t, int pos)
+        {
+            name = n;
+            type = t; 
+            turnPosition=pos;
+        }
+
+        public int GetHandRank(){return playerHandRank;}
+        public int GetPotOdds(){return playerPotOdds;}
+        public bool GetIsWinning(){return isWinning;}
+
+    }
+
+    List<Player> playerList = new();
+*/
+    
 
     public class Card
     {
@@ -88,6 +134,7 @@ public class DeckManager : MonoBehaviour
 
     void Start()
     {
+        Debug.Log("Game started");
         CreateDeck();
         ShuffleDeck();
         DealInitialCards();
@@ -163,6 +210,61 @@ void DealInitialCards()
     Debug.Log("Community cards dealt and initialized.");
 }
 
+
+    void SetBlinds()
+    {
+        smallBlindIndex = (dealerIndex + 1) % botActive.Length;
+        bigBlindIndex = (dealerIndex + 2) % botActive.Length;
+
+        if (smallBlindIndex == 0)
+        {
+            playerChips -= smallBlind;
+            potSize += smallBlind;
+        }
+        else
+        {
+            botChips[smallBlindIndex - 1] -= smallBlind;
+            potSize += smallBlind;
+        }
+
+        if (bigBlindIndex == 0)
+        {
+            playerChips -= bigBlind;
+            potSize += bigBlind;
+            currentBet = bigBlind;
+        }
+        else
+        {
+            botChips[bigBlindIndex - 1] -= bigBlind;
+            potSize += bigBlind;
+            currentBet = bigBlind;
+        }
+
+        UpdateUI();
+    }
+
+
+    void StartBettingRound()
+{
+        //Assumes player is initial dealer, player bets last
+    currentPlayerIndex = (dealerIndex + 1) % botActive.Length; // Start with the player after the dealer
+    bettingRoundInProgress = true;
+    Debug.Log("Starting betting round.");
+    for(int i=0; i<3; i++)
+    {
+        Debug.Log("Starting next roundfrom StartBettingRound()");
+        StartNextTurn();
+    }
+    /*while(!IsRoundComplete() && !roundOver && currentRound<3)
+    {*/
+        
+    //}
+    /*do{
+        StartNextTurn();
+    } while(!roundOver && botActive[0] && currentRound<3 );*/
+    roundOver = false;
+
+}
 
 void ResetCardVisibility()
 {
@@ -240,37 +342,7 @@ public void HidePlayerCards()
         return cardBack;
     }
 
-    void SetBlinds()
-    {
-        smallBlindIndex = (dealerIndex + 1) % 5;
-        bigBlindIndex = (dealerIndex + 2) % 5;
 
-        if (smallBlindIndex == 0)
-        {
-            playerChips -= smallBlind;
-            potSize += smallBlind;
-        }
-        else
-        {
-            botChips[smallBlindIndex - 1] -= smallBlind;
-            potSize += smallBlind;
-        }
-
-        if (bigBlindIndex == 0)
-        {
-            playerChips -= bigBlind;
-            potSize += bigBlind;
-            currentBet = bigBlind;
-        }
-        else
-        {
-            botChips[bigBlindIndex - 1] -= bigBlind;
-            potSize += bigBlind;
-            currentBet = bigBlind;
-        }
-
-        UpdateUI();
-    }
 
 public void UpdateRaiseSlider(Slider slider)
 {
@@ -471,7 +543,7 @@ public void BotAction(int botIndex)
     Debug.Log($"Bot {botIndex} hand strength: {handStrength}, pot odds: {potOdds}");
 
     // Decision logic
-    if (handStrength < potOdds || botChipsRemaining < callAmount) // Weak hand or can't afford to call
+    if ((handStrength < potOdds || botChipsRemaining < callAmount) && currentRound>0) // Weak hand or can't afford to call
     {
         Debug.Log($"Bot {botIndex} folds.");
         BotFold(botIndex);
@@ -495,9 +567,10 @@ public void BotAction(int botIndex)
         Debug.Log($"Bot {botIndex} calls.");
         BotCall(botIndex);
     }
+    turnsTaken++;
 
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+    //currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player, accounts for inactive
+    //StartNextTurn();
 }
 
 
@@ -572,7 +645,16 @@ private int EvaluateCommunityCards(Card card1, Card card2)
 }
 
 
-
+public int GetPlayerNum()
+{
+    int playerCount = 0;
+    foreach (bool isActive in botActive)
+        {
+            if (isActive)
+            playerCount++; // If any bot is active, return false
+        }
+        return playerCount;
+}
 
 
 
@@ -629,7 +711,7 @@ private int GetCardRankValue(string rank)
 
 
 
-    private void ProcessBotActions()
+    /*private void ProcessBotActions()
     { 
         for (int i = 0; i< botActive.Length; i++)
         { 
@@ -648,7 +730,7 @@ private int GetCardRankValue(string rank)
             return false; // If any bot is active, return false
         }
         return true; // All bots have folded
-    }
+    }*/
 
 
 
@@ -660,25 +742,20 @@ private int GetCardRankValue(string rank)
 
 
 
-    void StartBettingRound()
-{
-        //does this skip players turn if dealerindex is 0: (5 players + 1 dealer) %5?
-    currentPlayerIndex = (dealerIndex + 1) % 5; // Start with the player after the dealer
-    bettingRoundInProgress = true;
-    Debug.Log("Starting betting round.");
-    StartNextTurn();
-}
 
-void StartNextTurn()
+
+//
+void StartNextTurn(int playerPos = 0)
 {
     Debug.Log($"CurrentPlayerIndex: {currentPlayerIndex}");
 
+    ResetHighlights();
     // Deactivate all highlights
-    playerHighlight.SetActive(false);
+    /*playerHighlight.SetActive(false);
     botHighlight1.SetActive(false);
     botHighlight2.SetActive(false);
     botHighlight3.SetActive(false);
-    botHighlight4.SetActive(false);
+    botHighlight4.SetActive(false);*/
 
     // Check if the round is complete
     if (IsRoundComplete())
@@ -689,9 +766,10 @@ void StartNextTurn()
     }
 
     // Ensure currentPlayerIndex wraps correctly within bounds
-    int loopCounter = 0; // Safety counter to avoid infinite loops
-    while (loopCounter < botActive.Length + 1)
+    int loopCounter = playerPos; // Safety counter to avoid infinite loops
+    while (loopCounter < GetPlayerNum())
     {
+        Debug.Log($"loop count in StartNewTurn: {loopCounter}");
         // If it's the player's turn and the player hasn't folded
         if (currentPlayerIndex == 0 && playerChips > 0 && playerCard1.enabled && playerCard2.enabled)
         {
@@ -699,10 +777,12 @@ void StartNextTurn()
             playerHighlight.SetActive(true); // Highlight the player
             Debug.Log("Waiting for player input...");
             
+            
+            
             return; // STOP here and WAIT for player input
         }
         // If it's a bot's turn and the bot is active
-        else if (currentPlayerIndex > 0 && currentPlayerIndex <= botActive.Length && botActive[currentPlayerIndex - 1])
+        else if (currentPlayerIndex > 0 && currentPlayerIndex <= botActive.Length && botActive[currentPlayerIndex/* - 1*/])
         {
             turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
             Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
@@ -725,16 +805,21 @@ void StartNextTurn()
             }
 
             BotAction(currentPlayerIndex); // Perform bot action
-            return;
-        }
 
+            
+        }
+        
+        ResetHighlights();
         // Move to the next player, wrapping around correctly
-        currentPlayerIndex = (currentPlayerIndex + 1) % (botActive.Length + 1);
+        currentPlayerIndex = (currentPlayerIndex + 1) % botActive.Length;
         loopCounter++;
     }
-
+    Debug.Log($"End of Turn loop, CurrentPlayerIndex: {currentPlayerIndex}");
+    turnsTaken=0;
+    return;
     // If no valid players or bots, log an error (shouldn't happen in a properly designed game)
     Debug.LogError("No valid players or bots found to take a turn!");
+    
 }
 
 
@@ -817,14 +902,19 @@ public void PlayerRaise(int raiseAmount)
 void AdvanceTurn()
 {
     currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+    turnsTaken++;
+    StartNextTurn(currentPlayerIndex);
 }
 
 
 
-
+//may need to add turn indicator variable
+//player should be able to complete a round without losing all chips
+//round only advances if all bots fold(are not active)
 bool IsRoundComplete()
 {
+    return (turnsTaken>=botActive.Length || (currentPlayerIndex == dealerIndex && currentRound > 1));
+
     // Check if the player has acted
     bool playerActed = playerChips <= 0 || playerChips < currentBet;
 
@@ -838,6 +928,7 @@ bool IsRoundComplete()
             break;
         }
     }
+    
 
     return playerActed && allBotsActed;
 }
@@ -847,11 +938,11 @@ public void AdvanceGameFlow()
     if (!IsRoundComplete())
     {
         Debug.Log("Round is not complete. Continuing.");
-        StartNextTurn();
+        StartNextTurn(currentPlayerIndex);
         return;
     }
 
-    Debug.Log("Advancing game flow.");
+    Debug.Log($"Advancing game flow; currentRound: {currentRound}.");
 
     switch (currentRound)
     {
@@ -873,6 +964,7 @@ public void AdvanceGameFlow()
 
             // Update blinds and start with the new small blind
             UpdateBlinds();
+            turnsTaken=0;
             currentPlayerIndex = smallBlindPlayer; // Betting starts with the small blind
             StartNextTurn(); // Begin the new betting round
             break;
@@ -910,7 +1002,6 @@ private IEnumerator WaitForAction(float seconds, System.Action action)
     {
         potText.text = "Pot: $" + potSize;
         playerChipsText.text = "$" + playerChips;
-
         for (int i = 0; i < botChips.Length; i++)
         {
             botChipsTexts[i].text = "$" + botChips[i];
@@ -926,7 +1017,7 @@ private IEnumerator WaitForAction(float seconds, System.Action action)
 
             for (int i = 0; i < 3; i++)
             {
-             deck.RemoveAt(0);
+                deck.RemoveAt(0);
             }
 
     }
@@ -979,14 +1070,15 @@ void ResetGame()
     Debug.Log("Resetting game for the next round.");
 
     currentRound = 0;
-    botActive = new bool[] { true, true, true, true }; // Reset bots as active
+    botActive = new bool[] { true, true, true, true, true }; // Reset bots as active
     dealerIndex = (dealerIndex + 1) % 5; // Move dealer position to the next player
-    CreateDeck();
+    Start();
+    /*CreateDeck();
     ShuffleDeck();
     DealInitialCards();
     SetBlinds();
     UpdateUI();
-    StartBettingRound(); // Start the first betting round of the new game
+    StartBettingRound();*/ // Start the first betting round of the new game
 }
 
 
@@ -1045,8 +1137,52 @@ void ResetGame()
         }
 
         potSize = 0; // Reset pot for the next round
+        roundOver=true;
         UpdateUI();
         ResetGame();
+        }
+
+        public enum DumpType{player, bot, active, allPlayers, game, bet, chips, round, blind, cards, role, all}
+        public void DumpData(DumpType type)
+        {
+            if(type == DumpType.all || type == DumpType.player || type == DumpType.allPlayers )
+            Debug.LogWarning($"Player Data Dump::/n PlayerChips: {playerChips}\nplayerActive: {botActive[0]}");
+            if(type == DumpType.all || type == DumpType.bot || type == DumpType.allPlayers)
+            Debug.LogWarning($"Bot Data Dump:\nBotChips: {botChips[0]}, {botChips[1]}, {botChips[2]}, {botChips[3]}\nbotActive: {botActive[1]}, {botActive[2]}, {botActive[3]}, {botActive[4]}  ");
+            if(type == DumpType.all ||type == DumpType.bet || type == DumpType.game)
+            Debug.LogWarning($"Bet Data Dump:\npotSize: {potSize}\nminimumBet: {minimumBet}\ncurrentBet: {currentBet}");
+            if(type == DumpType.all ||type == DumpType.blind || type == DumpType.game)
+            Debug.LogWarning($"Blind Data Dump:\nsmBlind: {smallBlind}\nbigBlind{bigBlind}\nsBIndex: {smallBlindIndex}\nbBIndex: {bigBlindIndex}\nsBPlayer: {smallBlindPlayer}/nbBPlayer{bigBlindPlayer}");
+            if(type == DumpType.all ||type == DumpType.round || type == DumpType.game)
+            Debug.LogWarning($"Round Data Dump:\nroundOver?: {roundOver}\ncurrentRound: {currentRound}\nturnsTaken: {turnsTaken}\nbettingRoundIP: {bettingRoundInProgress}");
+            if(type == DumpType.all ||type == DumpType.role || type == DumpType.allPlayers)
+            Debug.LogWarning($"Role Data Dump:\ndealerIndex: {dealerIndex}\ncurrentPlayerIndex: {currentPlayerIndex}\nsbIndex: {smallBlindIndex}\nbBIndex: {bigBlindIndex}");
+      
+     /*
+     communityCardData = new List<Card>();
+    public TextMeshProUGUI smallBlindText;
+    public TextMeshProUGUI bigBlindText;
+
+    public TextMeshProUGUI CurrentSmall;
+    public TextMeshProUGUI CurrentBigBlind;
+
+    [SerializeField] private TextMeshProUGUI playerBlindIndicator;
+
+    [SerializeField] private TextMeshProUGUI[] botBlindIndicators;
+
+        public List<Card> deck = new List<Card>();
+    public Image playerCard1;
+    public Image playerCard2;
+    public Image[] communityCards;
+    [SerializeField] private Image botOneCard1;
+    [SerializeField] private Image botOneCard2;
+    [SerializeField] private Image botTwoCard1;
+    [SerializeField] private Image botTwoCard2;
+    [SerializeField] private Image botThreeCard1;
+    [SerializeField] private Image botThreeCard2;
+    [SerializeField] private Image botFourCard1;
+    [SerializeField] private Image botFourCard2;
+*/
         }
 }
 

@@ -52,6 +52,7 @@ public class PlayerActions : MonoBehaviour
         Debug.Log("Player calls");
         // Logic for player calling, matching the current bet
         deckManager.PlayerCalled();
+        UpdateSliderRange();
         deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);
     }
 
@@ -61,6 +62,7 @@ public class PlayerActions : MonoBehaviour
     if (raiseAmount > 0 && raiseAmount <= deckManager.playerChips)
     {
         deckManager.PlayerRaise(raiseAmount);
+        UpdateSliderRange();
         deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);
     }
     else
