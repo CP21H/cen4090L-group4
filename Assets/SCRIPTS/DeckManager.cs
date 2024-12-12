@@ -88,6 +88,25 @@ public class DeckManager : MonoBehaviour
 
     private bool playerFolded = false; // Tracks whether the player has folded
 
+    public enum GamePhase
+{
+    PreFlop,
+    Flop,
+    Turn,
+    River,
+    Showdown
+}
+
+private GamePhase currentPhase = GamePhase.PreFlop;
+private int turnsTakenInPhase = 0; // Tracks the number of turns in the current phase
+
+
+
+
+
+
+
+
 
     void Start()
     {
@@ -464,7 +483,7 @@ public void BotAction(int botIndex)
     if (!botActive[botIndex - 1]) return; // Skip inactive bots
 
     int botChipsRemaining = botChips[botIndex - 1];
-    int callAmount = currentBet; // Amount bot needs to call
+    int callAmount = currentBet - (botChipsRemaining >= currentBet ? 0 : botChipsRemaining); // Amount bot needs to call
     int potOdds = potSize > 0 ? (callAmount * 100 / (potSize + callAmount)) : 0; // Adjusted pot odds calculation
     int handStrength = EvaluateHandStrength(botIndex); // Evaluate the bot's hand strength (0-100)
     int aggressiveness = Random.Range(20, 80); // Adjust aggressiveness factor
@@ -482,7 +501,7 @@ public void BotAction(int botIndex)
     }
 
     // Decision Logic
-    if (handStrength < potOdds - Random.Range(10, 30) && botChipsRemaining >= callAmount) // Marginal hands
+    if (handStrength > potOdds - Random.Range(10, 30)) // Forgiving logic for marginal hands
     {
         Debug.Log($"Bot {botIndex} calls due to marginal hand.");
         BotCall(botIndex);
@@ -516,8 +535,6 @@ public void BotAction(int botIndex)
     StartNextTurn();
 }
 
-
-
 private int EvaluateHandStrength(int botIndex)
 {
     // Get the bot's cards from the deck
@@ -542,7 +559,7 @@ private int EvaluateHandStrength(int botIndex)
             break;
         default:
             Debug.LogError("Invalid bot index.");
-            return 0;
+            return 50; // Default to a neutral strength
     }
 
     // Base hand strength: Combine ranks
@@ -556,18 +573,17 @@ private int EvaluateHandStrength(int botIndex)
     // Suit bonus (same suit)
     int suitBonus = (card1.Suit == card2.Suit) ? 10 : 0;
 
-    // Add community card strength
-    int communityBonus = EvaluateCommunityCards(card1, card2);
-
-    // Dynamic position bonus based on the round
-    int positionBonus = EvaluatePositionBonus(botIndex);
+    // Add randomness to create variability
+    int randomFactor = Random.Range(-10, 10);
 
     // Final hand strength calculation
-    int handStrength = baseStrength + pairBonus + suitBonus + communityBonus + positionBonus;
+    int handStrength = baseStrength + pairBonus + suitBonus + randomFactor;
 
     Debug.Log($"Bot {botIndex} hand: {card1.Rank} of {card1.Suit}, {card2.Rank} of {card2.Suit}. Strength: {handStrength}");
     return Mathf.Clamp(handStrength, 0, 100); // Ensure strength is within bounds
 }
+
+
 
 
 private int EvaluateCommunityCards(Card card1, Card card2)
@@ -667,23 +683,15 @@ private int GetCardRankValue(string rank)
         return true; // All bots have folded
     }
 
-
-
-
-
-
-
-
-
-
-
-    void StartBettingRound()
+void StartBettingRound()
 {
+    Debug.Log($"Starting betting round for phase: {currentPhase}");
     currentPlayerIndex = (dealerIndex + 1) % 5; // Start with the player after the dealer
     bettingRoundInProgress = true;
-    Debug.Log("Starting betting round.");
-    StartNextTurn();
+    AdvanceTurn(); // Automatically process turns
 }
+
+
 
 void StartNextTurn()
 {
@@ -856,32 +864,49 @@ public void PlayerRaise(int raiseAmount)
 
 void AdvanceTurn()
 {
-    // Check if only one participant remains
-    if (AllPlayersOrBotsFolded())
+    // Loop through active participants
+    while (true)
     {
-        Debug.Log("Only one participant remains. Ending the round.");
-        HandleRoundWin();
-        return;
-    }
+        currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next participant
 
-    // Proceed to the next player or bot
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5;
+        // Skip inactive bots or folded player
+        if (currentPlayerIndex == 0 && playerFolded)
+        {
+            Debug.Log("Player has folded. Skipping their turn.");
+            continue;
+        }
 
-    // Skip the player's turn if they have folded
-    if (currentPlayerIndex == 0 && playerChips <= 0)
-    {
-        Debug.Log("Player has folded. Skipping their turn.");
-        AdvanceTurn();
-        return;
-    }
+        if (currentPlayerIndex > 0 && !botActive[currentPlayerIndex - 1])
+        {
+            Debug.Log($"Bot {currentPlayerIndex} is inactive. Skipping their turn.");
+            continue;
+        }
 
-    // If it's a bot's turn and the bot is active, process its action
-    if (currentPlayerIndex > 0 && botActive[currentPlayerIndex - 1])
-    {
-        StartNextTurn();
-        return;
+        // If all participants have acted, move to the next phase
+        if (IsPhaseComplete())
+        {
+            AdvanceGameFlow();
+            return;
+        }
+
+        // Process turn
+        if (currentPlayerIndex == 0) // Player's turn
+        {
+            turnIndicatorText.text = "Player's Turn";
+            playerHighlight.SetActive(true);
+            Debug.Log("Waiting for player input...");
+            return; // Wait for player action
+        }
+        else if (currentPlayerIndex > 0 && botActive[currentPlayerIndex - 1]) // Bot's turn
+        {
+            turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
+            Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
+            BotAction(currentPlayerIndex); // Execute bot action
+            return; // Move to the next participant
+        }
     }
 }
+
 
 
 bool IsRoundComplete()
@@ -903,42 +928,48 @@ bool IsRoundComplete()
     return playerActed && allBotsActed;
 }
 
+bool IsPhaseComplete()
+{
+    // One turn per bot and player per phase
+    int activeParticipants = botActive.Length + (!playerFolded ? 1 : 0);
+    return turnsTakenInPhase >= activeParticipants;
+}
+
 public void AdvanceGameFlow()
 {
-    if (!IsRoundComplete())
-    {
-        Debug.Log("Round is not complete. Continuing.");
-        StartNextTurn();
-        return;
-    }
+    Debug.Log($"Advancing game flow. Current phase: {currentPhase}");
 
-    Debug.Log("Advancing game flow.");
+    // Reset turn counter for the new phase
+    turnsTakenInPhase = 0;
 
-    switch (currentRound)
+    switch (currentPhase)
     {
-        case 0: // Pre-Flop complete, move to Flop
+        case GamePhase.PreFlop:
             RevealFlop();
-            currentRound++;
+            currentPhase = GamePhase.Flop;
+            StartBettingRound();
             break;
-        case 1: // Flop complete, move to Turn
+        case GamePhase.Flop:
             RevealTurn();
-            currentRound++;
+            currentPhase = GamePhase.Turn;
+            StartBettingRound();
             break;
-        case 2: // Turn complete, move to River
+        case GamePhase.Turn:
             RevealRiver();
-            currentRound++;
+            currentPhase = GamePhase.River;
+            StartBettingRound();
             break;
-        case 3: // River complete, move to Showdown
+        case GamePhase.River:
+            currentPhase = GamePhase.Showdown;
             PerformShowdown();
-            currentRound = 0; // Reset for the next game
-
-            // Update blinds and start with the new small blind
-            UpdateBlinds();
-            currentPlayerIndex = smallBlindPlayer; // Betting starts with the small blind
-            StartNextTurn(); // Begin the new betting round
             break;
     }
 }
+
+
+
+
+
 
 
 
@@ -978,34 +1009,34 @@ private IEnumerator WaitForAction(float seconds, System.Action action)
         }
     }
 
-    void RevealFlop()
+void RevealFlop()
+{
+    Debug.Log("Revealing Flop.");
+    for (int i = 0; i < 3; i++)
     {
-        AudioSource.PlayClipAtPoint(soundFX, Camera.main.transform.position);
-        communityCards[0].sprite = GetCardSprite(deck[0]);
-        communityCards[1].sprite = GetCardSprite(deck[1]);
-        communityCards[2].sprite = GetCardSprite(deck[2]);
-
-            for (int i = 0; i < 3; i++)
-            {
-             deck.RemoveAt(0);
-            }
-
+        communityCards[i].sprite = GetCardSprite(deck[i]);
     }
+    deck.RemoveRange(0, 3); // Remove revealed cards from the deck
+}
 
-    void RevealTurn()
-    {
-        communityCards[3].sprite = GetCardSprite(deck[0]);
-        deck.RemoveAt(0); // Remove the turn card from the deck
+void RevealTurn()
+{
+    Debug.Log("Revealing Turn.");
+    communityCards[3].sprite = GetCardSprite(deck[0]);
+    deck.RemoveAt(0); // Remove revealed card from the deck
+}
 
-    }
+void RevealRiver()
+{
+    Debug.Log("Revealing River.");
+    communityCards[4].sprite = GetCardSprite(deck[0]);
+    deck.RemoveAt(0); // Remove revealed card from the deck
+}
 
-    void RevealRiver()
-    {
-        communityCards[4].sprite = GetCardSprite(deck[0]);
-        deck.RemoveAt(0); // Remove the turn card from the deck
 
 
-        }
+
+
 
     void RevealBotCards(int botIndex)
         {
@@ -1041,14 +1072,15 @@ void ResetGame()
     Debug.Log("Resetting game for the next round.");
 
     // Reset round-related data
-    currentRound = 0;
-    playerFolded = false; // Reset player fold status
-    botActive = new bool[] { true, true, true, true }; // Reset bots to active
-    potSize = 0; // Reset pot size
-    currentBet = 0; // Reset current bet
-    dealerIndex = (dealerIndex + 1) % 5; // Rotate dealer position
+    currentPhase = GamePhase.PreFlop;
+    turnsTakenInPhase = 0;
+    playerFolded = false;
+    botActive = new bool[] { true, true, true, true };
+    potSize = 0;
+    currentBet = 0;
+    dealerIndex = (dealerIndex + 1) % 5;
 
-    // Clear and recreate the deck
+    // Recreate and shuffle the deck
     deck.Clear();
     CreateDeck();
     ShuffleDeck();
@@ -1056,20 +1088,21 @@ void ResetGame()
     // Reset community cards
     foreach (var card in communityCards)
     {
-        card.sprite = cardBack; // Reset to card back
+        card.sprite = cardBack;
     }
     communityCardData.Clear();
 
     // Deal new cards
     DealInitialCards();
 
-    // Reset blinds and update UI
+    // Set blinds and update UI
     SetBlinds();
     UpdateUI();
 
     // Start the first betting round
     StartBettingRound();
 }
+
 
 
 
