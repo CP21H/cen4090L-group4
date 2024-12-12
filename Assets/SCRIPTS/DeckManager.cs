@@ -122,17 +122,19 @@ public class DeckManager : MonoBehaviour
 
 void DealInitialCards()
 {
-    // Ensure there are enough cards in the deck
+    Debug.Log("Dealing new cards for the next round.");
+
+    // Ensure the deck has enough cards
     if (deck.Count < 15)
     {
         Debug.LogError("Not enough cards in the deck to deal!");
         return;
     }
 
-    // Clear any existing data
+    // Reset community card data
     communityCardData.Clear();
 
-    // Assign the first two cards to the player
+    // Deal two cards to the player
     playerCard1.sprite = GetCardSprite(deck[0]);
     playerCard2.sprite = GetCardSprite(deck[1]);
     Debug.Log($"Dealt to player: {deck[0].Suit} {deck[0].Rank}, {deck[1].Suit} {deck[1].Rank}");
@@ -140,27 +142,25 @@ void DealInitialCards()
     // Assign two cards to each bot
     botOneCard1.sprite = cardBack;
     botOneCard2.sprite = cardBack;
-
     botTwoCard1.sprite = cardBack;
     botTwoCard2.sprite = cardBack;
-
     botThreeCard1.sprite = cardBack;
     botThreeCard2.sprite = cardBack;
-
     botFourCard1.sprite = cardBack;
     botFourCard2.sprite = cardBack;
 
-    // Remove the dealt cards (2 per player = 10 cards)
+    // Remove dealt cards (10 total: 2 for the player and 2 for each bot)
     deck.RemoveRange(0, 10);
 
-    // Assign the next 5 cards to the community (Flop, Turn, River)
+    // Deal community cards (Flop, Turn, River)
     for (int i = 0; i < 5; i++)
     {
-        communityCards[i].sprite = cardBack; // Initialize with card back
-        communityCardData.Add(deck[i + 10]); // Add card data to communityCardData
+        communityCards[i].sprite = cardBack; // Reset to card back
+        communityCardData.Add(deck[i]); // Add to community card data
     }
-    Debug.Log("Community cards dealt and initialized.");
+    Debug.Log("New community cards dealt and initialized.");
 }
+
 
 
 void ResetCardVisibility()
@@ -461,17 +461,32 @@ public void BotAction(int botIndex)
     if (!botActive[botIndex - 1]) return; // Skip inactive bots
 
     int botChipsRemaining = botChips[botIndex - 1];
-    int callAmount = currentBet - (botChipsRemaining >= currentBet ? 0 : botChipsRemaining); // Amount bot needs to call
-    int potOdds = potSize > 0 ? callAmount * 100 / potSize : 0; // Pot odds as a percentage
+    int callAmount = currentBet; // Amount bot needs to call
+    int potOdds = potSize > 0 ? (callAmount * 100 / (potSize + callAmount)) : 0; // Adjusted pot odds calculation
     int handStrength = EvaluateHandStrength(botIndex); // Evaluate the bot's hand strength (0-100)
     int aggressiveness = Random.Range(20, 80); // Adjust aggressiveness factor
 
-    Debug.Log($"Bot {botIndex} hand strength: {handStrength}, pot odds: {potOdds}");
+    Debug.Log($"Bot {botIndex} hand strength: {handStrength}, pot odds: {potOdds}, aggressiveness: {aggressiveness}");
 
-    // Decision logic
-    if (handStrength < potOdds || botChipsRemaining < callAmount) // Weak hand or can't afford to call
+    // Bluff Factor
+    bool isBluffing = Random.Range(0, 100) < 10; // 10% chance to bluff
+    if (isBluffing)
     {
-        Debug.Log($"Bot {botIndex} folds.");
+        int bluffRaise = Mathf.Min(currentBet + Random.Range(minimumBet, minimumBet * 3), botChipsRemaining);
+        Debug.Log($"Bot {botIndex} is bluffing and raises to {bluffRaise}.");
+        BotRaise(botIndex, bluffRaise);
+        return;
+    }
+
+    // Decision Logic
+    if (handStrength < potOdds - Random.Range(10, 30) && botChipsRemaining >= callAmount) // Marginal hands
+    {
+        Debug.Log($"Bot {botIndex} calls due to marginal hand.");
+        BotCall(botIndex);
+    }
+    else if (handStrength < potOdds || botChipsRemaining < callAmount) // Weak hand or insufficient chips
+    {
+        Debug.Log($"Bot {botIndex} folds due to weak hand or insufficient chips.");
         BotFold(botIndex);
     }
     else if (handStrength > aggressiveness) // Strong hand or aggressive bot
@@ -497,6 +512,7 @@ public void BotAction(int botIndex)
     currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
     StartNextTurn();
 }
+
 
 
 private int EvaluateHandStrength(int botIndex)
@@ -671,11 +687,7 @@ void StartNextTurn()
     Debug.Log($"CurrentPlayerIndex: {currentPlayerIndex}");
 
     // Deactivate all highlights
-    playerHighlight.SetActive(false);
-    botHighlight1.SetActive(false);
-    botHighlight2.SetActive(false);
-    botHighlight3.SetActive(false);
-    botHighlight4.SetActive(false);
+    ResetHighlights();
 
     // Check if the round is complete
     if (IsRoundComplete())
@@ -685,53 +697,44 @@ void StartNextTurn()
         return;
     }
 
-    // Ensure currentPlayerIndex wraps correctly within bounds
-    int loopCounter = 0; // Safety counter to avoid infinite loops
-    while (loopCounter < botActive.Length + 1)
+    // Skip the player's turn if they have folded
+    if (currentPlayerIndex == 0 && playerChips <= 0)
     {
-        // If it's the player's turn and the player hasn't folded
-        if (currentPlayerIndex == 0 && playerChips > 0)
-        {
-            turnIndicatorText.text = "Player's Turn";
-            playerHighlight.SetActive(true); // Highlight the player
-            Debug.Log("Waiting for player input...");
-            return; // STOP here and WAIT for player input
-        }
-        // If it's a bot's turn and the bot is active
-        else if (currentPlayerIndex > 0 && currentPlayerIndex <= botActive.Length && botActive[currentPlayerIndex - 1])
-        {
-            turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
-            Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
-            
-            // Highlight the active bot
-            switch (currentPlayerIndex)
-            {
-                case 1:
-                    botHighlight1.SetActive(true);
-                    break;
-                case 2:
-                    botHighlight2.SetActive(true);
-                    break;
-                case 3:
-                    botHighlight3.SetActive(true);
-                    break;
-                case 4:
-                    botHighlight4.SetActive(true);
-                    break;
-            }
-
-            BotAction(currentPlayerIndex); // Perform bot action
-            return;
-        }
-
-        // Move to the next player, wrapping around correctly
-        currentPlayerIndex = (currentPlayerIndex + 1) % (botActive.Length + 1);
-        loopCounter++;
+        Debug.Log("Player has folded. Skipping their turn.");
+        AdvanceTurn(); // Advance to the next turn
+        return;
     }
 
-    // If no valid players or bots, log an error (shouldn't happen in a properly designed game)
+    // Highlight and execute the current turn
+    if (currentPlayerIndex == 0) // Player's turn
+    {
+        turnIndicatorText.text = "Player's Turn";
+        playerHighlight.SetActive(true);
+        Debug.Log("Waiting for player input...");
+        return; // Wait for player input
+    }
+    else if (currentPlayerIndex > 0 && botActive[currentPlayerIndex - 1]) // Bot's turn
+    {
+        turnIndicatorText.text = $"Bot {currentPlayerIndex}'s Turn";
+        Debug.Log($"Bot {currentPlayerIndex}'s turn to act.");
+
+        // Highlight the active bot
+        switch (currentPlayerIndex)
+        {
+            case 1: botHighlight1.SetActive(true); break;
+            case 2: botHighlight2.SetActive(true); break;
+            case 3: botHighlight3.SetActive(true); break;
+            case 4: botHighlight4.SetActive(true); break;
+        }
+
+        BotAction(currentPlayerIndex); // Execute the bot's action
+        return;
+    }
+
+    // If no valid players or bots are found, log an error
     Debug.LogError("No valid players or bots found to take a turn!");
 }
+
 
 
 
@@ -747,30 +750,74 @@ void ResetHighlights()
     botHighlight4.SetActive(false);
 }
 
-
-
-
-
-
 bool AllPlayersOrBotsFolded()
 {
-    int activePlayers = botActive.Length;
-    if (playerChips > 0) activePlayers++;
-    foreach (bool bot in botActive)
+    int activeParticipants = 0;
+
+    // Check player activity
+    if (playerChips > 0) activeParticipants++;
+
+    // Check active bots
+    foreach (bool isActive in botActive)
     {
-        if (!bot) activePlayers--;
+        if (isActive) activeParticipants++;
     }
 
-    return activePlayers <= 1;
+    // If only one participant remains, return true
+    return activeParticipants <= 1;
 }
+
+
+
+
+void HandleRoundWin()
+{
+    int winnerIndex = -1;
+
+    // Determine the winner
+    if (playerChips > 0) // Player is still active
+    {
+        winnerIndex = 0;
+        Debug.Log("Player wins the pot!");
+        playerChips += potSize; // Award pot to the player
+    }
+    else // Find the last active bot
+    {
+        for (int i = 0; i < botActive.Length; i++)
+        {
+            if (botActive[i])
+            {
+                winnerIndex = i + 1; // Bot IDs are 1-based
+                Debug.Log($"Bot {winnerIndex} wins the pot!");
+                botChips[i] += potSize; // Award pot to the bot
+                break;
+            }
+        }
+    }
+
+    // Reset pot size
+    potSize = 0;
+
+    // Update UI
+    UpdateUI();
+
+    // Reset the game for the next round
+    ResetGame();
+}
+
+
 
 public void PlayerFolded()
 {
     Debug.Log("Player folded.");
-    botActive[0] = false; // Mark player as inactive
-    HidePlayerCards(); // Hide player's cards
-    AdvanceTurn(); // Advance after player action
+    playerChips = 0; // Set player chips to 0 to indicate they are out of the round
+    HidePlayerCards(); // Hide the player's cards
+    AdvanceTurn(); // Advance to the next turn immediately
 }
+
+
+
+
 
 public void PlayerCalled()
 {
@@ -806,17 +853,34 @@ public void PlayerRaise(int raiseAmount)
 }
 
 
-
-
-
-
 void AdvanceTurn()
 {
-    currentPlayerIndex = (currentPlayerIndex + 1) % 5; // Move to the next player
-    StartNextTurn();
+    // Check if only one participant remains
+    if (AllPlayersOrBotsFolded())
+    {
+        Debug.Log("Only one participant remains. Ending the round.");
+        HandleRoundWin();
+        return;
+    }
+
+    // Proceed to the next player or bot
+    currentPlayerIndex = (currentPlayerIndex + 1) % 5;
+
+    // Skip the player's turn if they have folded
+    if (currentPlayerIndex == 0 && playerChips <= 0)
+    {
+        Debug.Log("Player has folded. Skipping their turn.");
+        AdvanceTurn();
+        return;
+    }
+
+    // If it's a bot's turn and the bot is active, process its action
+    if (currentPlayerIndex > 0 && botActive[currentPlayerIndex - 1])
+    {
+        StartNextTurn();
+        return;
+    }
 }
-
-
 
 
 bool IsRoundComplete()
@@ -971,80 +1035,94 @@ int EvaluateHand(int playerIndex)
     return Random.Range(1, 10); // Placeholder: random ranking
 }
 
-
 void ResetGame()
 {
     Debug.Log("Resetting game for the next round.");
 
+    // Reset round-related data
     currentRound = 0;
-    botActive = new bool[] { true, true, true, true }; // Reset bots as active
-    dealerIndex = (dealerIndex + 1) % 5; // Move dealer position to the next player
+    botActive = new bool[] { true, true, true, true }; // Reset bots to active
+    potSize = 0; // Reset pot size
+    currentBet = 0; // Reset current bet
+    dealerIndex = (dealerIndex + 1) % 5; // Rotate dealer position
+
+    // Clear and recreate the deck
+    deck.Clear();
     CreateDeck();
     ShuffleDeck();
+
+    // Reset community cards
+    foreach (var card in communityCards)
+    {
+        card.sprite = cardBack; // Reset to card back
+    }
+    communityCardData.Clear();
+
+    // Deal new cards
     DealInitialCards();
+
+    // Reset blinds and update UI
     SetBlinds();
     UpdateUI();
-    StartBettingRound(); // Start the first betting round of the new game
+
+    // Start the first betting round
+    StartBettingRound();
 }
 
 
 
 
 
-
-
-
-
-
-    void PerformShowdown()
-    {
-        Debug.Log("Showdown! Comparing hands to determine the winner.");
+void PerformShowdown()
+{
+    Debug.Log("Showdown! Comparing hands to determine the winner.");
 
     // Reveal each bot's cards if they are still active
-        for (int i = 0; i < botActive.Length; i++)
+    for (int i = 0; i < botActive.Length; i++)
+    {
+        if (botActive[i])
         {
-            if (botActive[i])
-            {
-                RevealBotCards(i + 1); // Bot IDs are 1-based
-            }
+            RevealBotCards(i + 1); // Bot IDs are 1-based
         }
+    }
 
     // Assume player and bots are in a list for comparison
-        List<int> activePlayers = new List<int> { 0 }; // 0 for the player
-        for (int i = 0; i < botActive.Length; i++)
-        {
-            if (botActive[i])
-            activePlayers.Add(i + 1); // Adding active bots to the list
-        }
+    List<int> activePlayers = new List<int> { 0 }; // 0 for the player
+    for (int i = 0; i < botActive.Length; i++)
+    {
+        if (botActive[i])
+            activePlayers.Add(i + 1); // Add active bots to the list
+    }
 
-        // For simplicity, assume a method EvaluateHand that returns a hand ranking
-        int bestPlayer = -1;
-        int bestHandRank = -1;
+    // For simplicity, assume a method EvaluateHand that returns a hand ranking
+    int bestPlayer = -1;
+    int bestHandRank = -1;
 
-        foreach (int player in activePlayers)
+    foreach (int player in activePlayers)
+    {
+        int handRank = EvaluateHand(player);
+        if (handRank > bestHandRank)
         {
-            int handRank = EvaluateHand(player);
-            if (handRank > bestHandRank)
-            {
-                bestHandRank = handRank;
-                bestPlayer = player;
-            }
-        }   
+            bestHandRank = handRank;
+            bestPlayer = player;
+        }
+    }
 
-        if (bestPlayer == 0)
-        {
-            Debug.Log("The player wins the pot!");
-            playerChips += potSize; // Award pot to player
-        }
-        else
-        {
-            Debug.Log("Bot " + bestPlayer + " wins the pot!");
-            botChips[bestPlayer - 1] += potSize; // Award pot to the winning bot
-        }
+    if (bestPlayer == 0)
+    {
+        Debug.Log("The player wins the pot!");
+        playerChips += potSize; // Award pot to the player
+    }
+    else
+    {
+        Debug.Log("Bot " + bestPlayer + " wins the pot!");
+        botChips[bestPlayer - 1] += potSize; // Award pot to the winning bot
+    }
 
-        potSize = 0; // Reset pot for the next round
-        UpdateUI();
-        ResetGame();
-        }
+    potSize = 0; // Reset pot for the next round
+    UpdateUI();
+    ResetGame(); // Start a new round
 }
 
+
+}
