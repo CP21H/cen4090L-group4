@@ -86,6 +86,9 @@ public class DeckManager : MonoBehaviour
 
     private int currentRound = 0;
 
+    private bool playerFolded = false; // Tracks whether the player has folded
+
+
     void Start()
     {
         CreateDeck();
@@ -736,10 +739,6 @@ void StartNextTurn()
 }
 
 
-
-
-
-
 // Helper function to reset all highlights
 void ResetHighlights()
 {
@@ -755,7 +754,7 @@ bool AllPlayersOrBotsFolded()
     int activeParticipants = 0;
 
     // Check player activity
-    if (playerChips > 0) activeParticipants++;
+    if (!playerFolded && playerChips > 0) activeParticipants++;
 
     // Check active bots
     foreach (bool isActive in botActive)
@@ -769,19 +768,18 @@ bool AllPlayersOrBotsFolded()
 
 
 
-
 void HandleRoundWin()
 {
     int winnerIndex = -1;
 
     // Determine the winner
-    if (playerChips > 0) // Player is still active
+    if (!playerFolded && playerChips > 0) // Player is active and hasn't folded
     {
         winnerIndex = 0;
         Debug.Log("Player wins the pot!");
         playerChips += potSize; // Award pot to the player
     }
-    else // Find the last active bot
+    else // Check for the last active bot
     {
         for (int i = 0; i < botActive.Length; i++)
         {
@@ -807,13 +805,16 @@ void HandleRoundWin()
 
 
 
+
+
 public void PlayerFolded()
 {
     Debug.Log("Player folded.");
-    playerChips = 0; // Set player chips to 0 to indicate they are out of the round
+    playerFolded = true; // Mark the player as folded
     HidePlayerCards(); // Hide the player's cards
-    AdvanceTurn(); // Advance to the next turn immediately
+    AdvanceTurn(); // Advance to the next turn automatically
 }
+
 
 
 
@@ -1041,6 +1042,7 @@ void ResetGame()
 
     // Reset round-related data
     currentRound = 0;
+    playerFolded = false; // Reset player fold status
     botActive = new bool[] { true, true, true, true }; // Reset bots to active
     potSize = 0; // Reset pot size
     currentBet = 0; // Reset current bet
