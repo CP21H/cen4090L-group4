@@ -63,7 +63,7 @@ public class PlayerActions : MonoBehaviour
     {
         deckManager.PlayerRaise(raiseAmount);
         UpdateSliderRange();
-        deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);
+        deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);
     }
     else
     {
