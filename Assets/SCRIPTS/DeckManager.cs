@@ -25,6 +25,8 @@ public class DeckManager : MonoBehaviour
     private int dealerIndex = 0;
     private int smallBlindIndex = 0;
     private int bigBlindIndex = 1;
+    private int playerContributedChips = 0; 
+
     public List<Card> communityCardData = new List<Card>();
 
 
@@ -51,6 +53,7 @@ public class DeckManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI playerBlindIndicator;
 
     [SerializeField] private TextMeshProUGUI[] botBlindIndicators;
+    [SerializeField] private TextMeshProUGUI callAmountText;
 
 
 
@@ -80,6 +83,7 @@ public class DeckManager : MonoBehaviour
     [SerializeField] private Image botThreeCard2;
     [SerializeField] private Image botFourCard1;
     [SerializeField] private Image botFourCard2;
+    
 
     public Sprite cardBack;
     public Sprite[] cardSprites;
@@ -260,38 +264,41 @@ public void HidePlayerCards()
 
         return cardBack;
     }
+    
 
     void SetBlinds()
+{
+    smallBlindIndex = (dealerIndex + 1) % 5;
+    bigBlindIndex = (dealerIndex + 2) % 5;
+
+    if (smallBlindIndex == 0)
     {
-        smallBlindIndex = (dealerIndex + 1) % 5;
-        bigBlindIndex = (dealerIndex + 2) % 5;
-
-        if (smallBlindIndex == 0)
-        {
-            playerChips -= smallBlind;
-            potSize += smallBlind;
-        }
-        else
-        {
-            botChips[smallBlindIndex - 1] -= smallBlind;
-            potSize += smallBlind;
-        }
-
-        if (bigBlindIndex == 0)
-        {
-            playerChips -= bigBlind;
-            potSize += bigBlind;
-            currentBet = bigBlind;
-        }
-        else
-        {
-            botChips[bigBlindIndex - 1] -= bigBlind;
-            potSize += bigBlind;
-            currentBet = bigBlind;
-        }
-
-        UpdateUI();
+        playerChips -= smallBlind;
+        potSize += smallBlind;
     }
+    else
+    {
+        botChips[smallBlindIndex - 1] -= smallBlind;
+        potSize += smallBlind;
+    }
+
+    if (bigBlindIndex == 0)
+    {
+        playerChips -= bigBlind;
+        potSize += bigBlind;
+        currentBet = bigBlind;
+    }
+    else
+    {
+        botChips[bigBlindIndex - 1] -= bigBlind;
+        potSize += bigBlind;
+        currentBet = bigBlind;
+    }
+
+    UpdateUI();
+    UpdateCallAmount(); // Update the displayed call amount
+}
+
 
 public void UpdateRaiseSlider(Slider slider)
 {
@@ -341,6 +348,20 @@ private void UpdateBlinds()
     // Deduct blinds for the new round
     DeductBlinds();
 }
+
+private void UpdateCallAmount()
+{
+    int callAmount = currentBet - playerContributedChips;
+
+    // Ensure the call amount doesn't go below zero
+    callAmount = Mathf.Max(callAmount, 0);
+
+    // Update the call amount display
+    callAmountText.text = $"Amount to Call: ${callAmount}";
+
+    Debug.Log($"Updated Call Amount: {callAmount}");
+}
+
 
 
 
@@ -455,6 +476,7 @@ public void BotRaise(int botIndex, int raiseAmount)
         botChips[botIndex - 1] -= raiseAmount;
         potSize += raiseAmount;
         Debug.Log($"Bot {botIndex} raises to {currentBet}.");
+        UpdateCallAmount();
         UpdateUI();
     }
     else
@@ -686,6 +708,8 @@ private int GetCardRankValue(string rank)
 void StartBettingRound()
 {
     Debug.Log($"Starting betting round for phase: {currentPhase}");
+    playerContributedChips = 0;
+    UpdateCallAmount();
     currentPlayerIndex = (dealerIndex + 1) % 5; // Start with the player after the dealer
     bettingRoundInProgress = true;
     AdvanceTurn(); // Automatically process turns
@@ -836,6 +860,7 @@ public void PlayerCalled()
         playerChips -= currentBet;
         potSize += currentBet;
         UpdateUI();
+        UpdateCallAmount();
     }
     else
     {
@@ -853,6 +878,7 @@ public void PlayerRaise(int raiseAmount)
         potSize += raiseAmount;
         Debug.Log($"Player raises to {currentBet}.");
         UpdateUI();
+        UpdateCallAmount();
     }
     else
     {
@@ -941,6 +967,9 @@ public void AdvanceGameFlow()
 
     // Reset turn counter for the new phase
     turnsTakenInPhase = 0;
+    // Reset call amount for new betting round
+    currentBet = 0;
+    UpdateCallAmount();
 
     switch (currentPhase)
     {
@@ -964,6 +993,8 @@ public void AdvanceGameFlow()
             PerformShowdown();
             break;
     }
+    // Ensure callAmountText is visible and updated
+    callAmountText.gameObject.SetActive(true);
 }
 
 
@@ -1078,6 +1109,8 @@ void ResetGame()
     botActive = new bool[] { true, true, true, true };
     potSize = 0;
     currentBet = 0;
+    playerContributedChips = 0;
+    callAmountText.gameObject.SetActive(true); // Ensure it is visible
     dealerIndex = (dealerIndex + 1) % 5;
 
     // Recreate and shuffle the deck
@@ -1098,6 +1131,7 @@ void ResetGame()
     // Set blinds and update UI
     SetBlinds();
     UpdateUI();
+    UpdateCallAmount();
 
     // Start the first betting round
     StartBettingRound();
