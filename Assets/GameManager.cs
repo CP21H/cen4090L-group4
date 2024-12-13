@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
     }
 
     public void exitGame() {
+        //bool exit = DeckManager.ExitGame();
         Application.Quit();
         Debug.Log("Exiting game...");
     }
