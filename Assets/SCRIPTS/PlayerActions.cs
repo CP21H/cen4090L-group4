@@ -33,6 +33,12 @@ public class PlayerActions : MonoBehaviour
         UpdateSliderText(raiseSlider.value);
     }
 
+
+    /*void WaitForPlayerAction()
+    {
+
+    }*/
+
     void Fold()
     {
         Debug.Log("Player folds");
@@ -46,6 +52,7 @@ public class PlayerActions : MonoBehaviour
         Debug.Log("Player calls");
         // Logic for player calling, matching the current bet
         deckManager.PlayerCalled();
+        UpdateSliderRange();
         deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);
     }
 
@@ -55,7 +62,8 @@ public class PlayerActions : MonoBehaviour
     if (raiseAmount > 0 && raiseAmount <= deckManager.playerChips)
     {
         deckManager.PlayerRaise(raiseAmount);
-        deckManager.ExecuteWithDelay(5.0f, deckManager.AdvanceGameFlow);
+        UpdateSliderRange();
+        deckManager.ExecuteWithDelay(1.0f, deckManager.AdvanceGameFlow);
     }
     else
     {
@@ -66,19 +74,44 @@ public class PlayerActions : MonoBehaviour
 
     void UpdateSliderText(float value)
     {
-        sliderValueText.text = "$" + Mathf.RoundToInt(value); // Update the slider value text
+        if(value == 0)
+            sliderValueText.text= "All Chips Bet";
+        else
+            sliderValueText.text = "$" + Mathf.RoundToInt(value); // Update the slider value text
     }
 
 public void UpdateSliderRange()
 {
-    raiseSlider.minValue = deckManager.currentBet + deckManager.minimumBet;
-    raiseSlider.maxValue = deckManager.playerChips;
+    int minRaise = deckManager.currentBet + deckManager.minimumBet;
 
-    if (raiseSlider.value < raiseSlider.minValue)
+    if(deckManager.playerChips >= 0)
     {
-        raiseSlider.value = raiseSlider.minValue;
+        raiseSlider.minValue = minRaise;
+    }
+    else
+    {
+        raiseSlider.minValue = -1;
+        raiseSlider.maxValue = 0;
+        raiseSlider.value = 0;
     }
 
+    raiseSlider.maxValue = deckManager.playerChips;
+    if (raiseSlider.value < raiseSlider.minValue)
+    {
+        if(raiseSlider.maxValue==0)
+        {
+            raiseSlider.value = 0;
+        }
+        else
+        {
+            raiseSlider.value = raiseSlider.minValue;
+        }
+    } 
+    else if(raiseSlider.value > raiseSlider.maxValue || raiseSlider.value > deckManager.playerChips)
+    {
+        raiseSlider.value = raiseSlider.maxValue;
+
+    }                   
     UpdateSliderText(raiseSlider.value);
 }
 }
