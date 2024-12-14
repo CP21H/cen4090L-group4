@@ -9,14 +9,7 @@
 - **VCS:** Git
 - **IDE:** Virtual Studio Code
 
-
-### Setup
-[TO BE FILLED OUT]
-
-### Required Deliverables
-[TO BE FILLED OUT]
-
-#### Videos
+### Increments
 - [Increment 1](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%201)
 - [Increment 2](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%202)
 - [Increment 3](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%203)
