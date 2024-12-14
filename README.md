@@ -19,7 +19,7 @@
 #### Videos
 - [Increment 1](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%201)
 - [Increment 2](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%202)
-- [Increment 3]()
+- [Increment 3](https://github.com/CP21H/cen4090L-group4/tree/main/Increments/Increment%203)
 
 ### Group Members
 - **Cristhian Prado** — [_CP21H_](https://github.com/CP21H)
